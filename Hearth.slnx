@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Hearth.Api/Hearth.Api.csproj" />
+  <Project Path="Hearth.Application/Hearth.Application.csproj" />
+  <Project Path="Hearth.Domain/Hearth.Domain.csproj" />
+  <Project Path="Hearth.Infrastructure/Hearth.Infrastructure.csproj" />
+</Solution>
