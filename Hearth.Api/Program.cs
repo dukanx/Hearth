@@ -1,34 +1,25 @@
 using System.Text;
-using FluentValidation;
+using Hearth.Api;
 using Hearth.Application;
-using Hearth.Infrastructure.Identity;
+using Hearth.Infrastructure;
 using Hearth.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Services ---
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
 
-// EF Core (PostgreSQL)
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Identity — core only: ovo je token-API, ne treba nam cookie autentifikacija.
-// AddIdentityCore daje UserManager; AddRoles dodaje RoleManager; EF stores ih vežu za AppDbContext.
-builder.Services
-    .AddIdentityCore<ApplicationUser>(options =>
-    {
-        options.User.RequireUniqueEmail = true;
-    })
-    .AddRoles<IdentityRole<Guid>>()
-    .AddEntityFrameworkStores<AppDbContext>();
+// Sloj-po-sloj DI: MediatR/validatori (Application) i DbContext/Identity/servisi (Infrastructure).
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 // JWT autentifikacija — JWT je default scheme (nema cookie da otme default).
 var jwtSection = builder.Configuration.GetSection("Jwt");
@@ -58,18 +49,16 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// CQRS pipeline — registrovan sada da bude spreman za komande iz sledećeg koraka.
-builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(IApplicationMarker).Assembly));
-builder.Services.AddValidatorsFromAssembly(typeof(IApplicationMarker).Assembly);
-
 var app = builder.Build();
 
 // --- HTTP pipeline ---
 
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();

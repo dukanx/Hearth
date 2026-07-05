@@ -9,11 +9,23 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Scalar.AspNetCore" Version="2.16.10" />
+  </ItemGroup>
+
+  <!--
+    Microsoft.AspNetCore.OpenApi (10.0.x) tranzitivno povlači Microsoft.OpenApi 2.0.0,
+    koji je označen GHSA-v5pm-xwqc-g5wc. Zakrpa je u 3.x, ali je API-nekompatibilna sa
+    OpenApi source generatorom u .NET 10, pa ne može da se digne bez build greške.
+    Svesno suprimujemo baš taj advisory (dev-time doc zavisnost, nije runtime izloženo).
+    Ukloniti kad AspNetCore.OpenApi počne da referencira zakrpljeni Microsoft.OpenApi.
+  -->
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-v5pm-xwqc-g5wc" />
   </ItemGroup>
 
   <ItemGroup>
