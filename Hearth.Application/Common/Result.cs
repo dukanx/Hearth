@@ -4,6 +4,7 @@ public enum ErrorType
 {
     Validation,
     Unauthorized,
+    Forbidden,
     Conflict,
     NotFound,
     Failure
@@ -16,6 +17,9 @@ public sealed record Error(ErrorType Type, string Code, string Message)
 
     public static Error Unauthorized(string message, string code = "Unauthorized") =>
         new(ErrorType.Unauthorized, code, message);
+
+    public static Error Forbidden(string message, string code = "Forbidden") =>
+        new(ErrorType.Forbidden, code, message);
 
     public static Error Conflict(string message, string code = "Conflict") =>
         new(ErrorType.Conflict, code, message);

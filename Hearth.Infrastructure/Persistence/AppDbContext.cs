@@ -1,4 +1,5 @@
 using Hearth.Application.Common.Interfaces;
+using Hearth.Domain.Common;
 using Hearth.Domain.Entities;
 using Hearth.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -16,6 +17,18 @@ public class AppDbContext
     public DbSet<HouseholdTask> HouseholdTasks => Set<HouseholdTask>();
     public DbSet<ShoppingItem> ShoppingItems => Set<ShoppingItem>();
     public DbSet<Notification> Notifications => Set<Notification>();
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        // Auditing: postavi CreatedAt pri ubacivanju (za sve BaseEntity, uklj. domaćinstva i zadatke).
+        foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+        {
+            if (entry.State == EntityState.Added && entry.Entity.CreatedAt == default)
+                entry.Entity.CreatedAt = DateTime.UtcNow;
+        }
+
+        return base.SaveChangesAsync(cancellationToken);
+    }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

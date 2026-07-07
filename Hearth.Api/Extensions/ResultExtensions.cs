@@ -7,15 +7,22 @@ namespace Hearth.Api.Extensions;
 public static class ResultExtensions
 {
     public static IActionResult ToActionResult<T>(this Result<T> result)
-    {
-        if (result.IsSuccess)
-            return new OkObjectResult(result.Value);
+        => result.IsSuccess
+            ? new OkObjectResult(result.Value)
+            : Problem(result.Error!);
 
-        var error = result.Error!;
+    public static IActionResult ToActionResult(this Result result)
+        => result.IsSuccess
+            ? new NoContentResult()
+            : Problem(result.Error!);
+
+    private static IActionResult Problem(Error error)
+    {
         var status = error.Type switch
         {
             ErrorType.Validation => StatusCodes.Status400BadRequest,
             ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+            ErrorType.Forbidden => StatusCodes.Status403Forbidden,
             ErrorType.Conflict => StatusCodes.Status409Conflict,
             ErrorType.NotFound => StatusCodes.Status404NotFound,
             _ => StatusCodes.Status500InternalServerError
