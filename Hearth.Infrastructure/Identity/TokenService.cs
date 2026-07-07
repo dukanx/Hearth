@@ -19,10 +19,11 @@ public sealed class TokenService : ITokenService
     {
         var expiresAt = DateTime.UtcNow.AddMinutes(_options.ExpiryMinutes);
 
+        // userId je samo u 'sub' (bez dupliranja u NameIdentifier);
+        // čitanje na zaštićenim rutama radi jer je MapInboundClaims=false i NameClaimType="sub".
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };

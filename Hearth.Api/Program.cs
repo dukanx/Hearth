@@ -1,6 +1,9 @@
+using System.Security.Claims;
 using System.Text;
 using Hearth.Api;
+using Hearth.Api.Common;
 using Hearth.Application;
+using Hearth.Application.Common.Interfaces;
 using Hearth.Infrastructure;
 using Hearth.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -21,6 +24,10 @@ builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// Trenutni korisnik iz JWT-a (za zaštićene endpointe).
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+
 // JWT autentifikacija — JWT je default scheme (nema cookie da otme default).
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"]
@@ -34,6 +41,9 @@ builder.Services
     })
     .AddJwtBearer(options =>
     {
+        // Bez remapiranja claim-ova na dugačke XML URI-jeve — 'sub' ostaje 'sub'.
+        options.MapInboundClaims = false;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -43,7 +53,11 @@ builder.Services
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+
+            // userId čitamo iz 'sub', a [Authorize(Roles=...)] iz standardnog role claim-a.
+            NameClaimType = "sub",
+            RoleClaimType = ClaimTypes.Role
         };
     });
 

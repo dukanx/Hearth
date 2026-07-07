@@ -1,3 +1,4 @@
+using Hearth.Application.Common;
 using Microsoft.AspNetCore.Identity;
 
 namespace Hearth.Infrastructure.Persistence;
@@ -6,7 +7,7 @@ public static class IdentityDataSeeder
 {
     public static async Task SeedRolesAsync(RoleManager<IdentityRole<Guid>> roleManager)
     {
-        string[] roles = { "Adult", "Child" };
+        string[] roles = { Roles.Adult, Roles.Child };
 
         foreach (var role in roles)
         {

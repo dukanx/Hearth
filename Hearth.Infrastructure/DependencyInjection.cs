@@ -1,6 +1,7 @@
 using Hearth.Application.Common.Interfaces;
 using Hearth.Infrastructure.Identity;
 using Hearth.Infrastructure.Persistence;
+using Hearth.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -35,8 +36,10 @@ public static class DependencyInjection
 
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
 
+        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddSingleton<ITokenService, TokenService>();
+        services.AddSingleton<IJoinCodeGenerator, JoinCodeGenerator>();
 
         return services;
     }

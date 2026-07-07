@@ -44,6 +44,39 @@ public sealed class IdentityService : IIdentityService
         return await MapAsync(user);
     }
 
+    public async Task<Result<UserDto>> GetUserAsync(Guid userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return Error.NotFound("Korisnik nije pronađen.", "Auth.UserNotFound");
+
+        return await MapAsync(user);
+    }
+
+    public async Task<Result<UserDto>> AssignToHouseholdAsync(Guid userId, Guid householdId, string role)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return Error.NotFound("Korisnik nije pronađen.", "Auth.UserNotFound");
+
+        // Odbrambena provera lobby stanja (i ako je pozivalac već proverio).
+        if (user.HouseholdId is not null)
+            return Error.Conflict("Već si u domaćinstvu.", "Household.AlreadyMember");
+
+        user.HouseholdId = householdId;
+        var updateResult = await _userManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+            return Error.Validation(
+                string.Join("; ", updateResult.Errors.Select(e => e.Description)), "Auth.UpdateFailed");
+
+        var roleResult = await _userManager.AddToRoleAsync(user, role);
+        if (!roleResult.Succeeded)
+            return Error.Validation(
+                string.Join("; ", roleResult.Errors.Select(e => e.Description)), "Auth.RoleAssignFailed");
+
+        return await MapAsync(user);
+    }
+
     private async Task<UserDto> MapAsync(ApplicationUser user)
     {
         // Korisnik u ovom domenu ima najviše jednu ulogu (Adult xor Child);

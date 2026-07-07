@@ -1,3 +1,4 @@
+using Hearth.Application.Common.Interfaces;
 using Hearth.Domain.Entities;
 using Hearth.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -6,7 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Hearth.Infrastructure.Persistence;
 
-public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+public class AppDbContext
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IApplicationDbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -22,8 +24,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         builder.Entity<Household>(entity =>
         {
             entity.Property(h => h.Name).IsRequired().HasMaxLength(100);
-            entity.Property(h => h.JoinCode).IsRequired().HasMaxLength(20);
-            entity.HasIndex(h => h.JoinCode).IsUnique();
+
+            entity.Property(h => h.AdultJoinCode).IsRequired().HasMaxLength(20);
+            entity.Property(h => h.ChildJoinCode).IsRequired().HasMaxLength(20);
+            entity.HasIndex(h => h.AdultJoinCode).IsUnique();
+            entity.HasIndex(h => h.ChildJoinCode).IsUnique();
 
             entity.HasMany(h => h.Tasks)
                   .WithOne(t => t.Household)
