@@ -1,6 +1,8 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { House, ListChecks, LogOut, ShoppingBasket } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
+import { NotificationBell } from '../features/notifications/NotificationBell'
+import { useNotificationsHub } from '../features/notifications/useNotificationsHub'
 import { Wordmark } from './Wordmark'
 
 const TABS = [
@@ -11,6 +13,9 @@ const TABS = [
 
 export function AppLayout() {
   const { user, logout } = useAuth()
+
+  // Živa obaveštenja preko SignalR-a — aktivna dokle god je app shell montiran.
+  useNotificationsHub()
 
   return (
     <div className="min-h-dvh">
@@ -27,6 +32,7 @@ export function AppLayout() {
             <span className="hidden max-w-40 truncate text-sm font-medium text-ink-soft sm:inline">
               {user?.email.split('@')[0]}
             </span>
+            <NotificationBell />
             <button
               type="button"
               onClick={logout}

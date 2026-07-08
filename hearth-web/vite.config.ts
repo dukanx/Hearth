@@ -13,9 +13,10 @@ export default defineConfig({
       manifest: {
         name: 'Hearth',
         short_name: 'Hearth',
-        description: 'Household tasks, shopping, and notifications',
-        theme_color: '#c2410c',
-        background_color: '#fffbeb',
+        description: 'Zadaci, kupovina i obaveštenja za celo domaćinstvo',
+        lang: 'sr-Latn',
+        theme_color: '#f4f2ee',
+        background_color: '#f4f2ee',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -23,7 +24,13 @@ export default defineConfig({
             src: 'favicon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
-            purpose: 'any maskable',
+            purpose: 'any',
+          },
+          {
+            src: 'favicon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'maskable',
           },
         ],
       },
