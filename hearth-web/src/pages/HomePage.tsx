@@ -1,27 +1,146 @@
+import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import {
+  ChevronRight,
+  ClipboardCheck,
+  ListChecks,
+  ShoppingBasket,
+  UsersRound,
+} from 'lucide-react'
+import { getTasks } from '../api/tasks'
 import { useAuth } from '../auth/AuthContext'
+import { useMembers } from '../features/household/useMembers'
+import { GlassCard } from '../components/ui/GlassCard'
+import { Badge } from '../components/ui/Badge'
+
+function greeting() {
+  const hour = new Date().getHours()
+  if (hour < 10) return 'Dobro jutro'
+  if (hour < 18) return 'Dobar dan'
+  return 'Dobro veče'
+}
+
+const TODAY = new Intl.DateTimeFormat('sr-Latn-RS', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+}).format(new Date())
 
 export function HomePage() {
   const { user } = useAuth()
+  const { members, self } = useMembers()
+
+  const tasksQuery = useQuery({
+    queryKey: ['tasks', {}],
+    queryFn: () => getTasks(),
+  })
+
+  const tasks = tasksQuery.data ?? []
+  const openTasks = tasks.filter((t) => t.status !== 'Done')
+  const myOpenTasks = openTasks.filter((t) => t.assignedToUserId === user?.id)
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-stone-900">Dashboard</h1>
-      <p className="text-stone-600">
-        Signed in as <span className="font-medium">{user?.email}</span>
-        {user?.role && (
-          <>
-            {' '}
-            · <span className="font-medium">{user.role}</span>
-          </>
-        )}
-        .
-      </p>
-      {user?.householdId && (
-        <p className="rounded-xl border border-hearth-200 bg-white p-4 text-sm text-stone-600">
-          Household connected. Tasks, shopping, and notifications arrive in
-          F3–F5.
+    <div className="space-y-6">
+      <header className="animate-fade-up">
+        <p className="text-sm font-medium text-ink-soft first-letter:uppercase">
+          {TODAY}
         </p>
-      )}
+        <h1 className="mt-1 text-[1.7rem] leading-tight font-bold tracking-tight text-ink">
+          {greeting()}
+          {self ? `, ${self.displayName}` : ''}
+        </h1>
+      </header>
+
+      <div className="grid grid-cols-2 gap-3 animate-fade-up [animation-delay:60ms]">
+        <StatCard
+          to="/tasks"
+          icon={<ListChecks />}
+          value={tasksQuery.isLoading ? '–' : openTasks.length}
+          label="Aktivni zadaci"
+        />
+        <StatCard
+          to="/tasks"
+          icon={<ClipboardCheck />}
+          value={tasksQuery.isLoading ? '–' : myOpenTasks.length}
+          label="Moji zadaci"
+        />
+      </div>
+
+      <GlassCard className="p-5 animate-fade-up [animation-delay:120ms]">
+        <div className="flex items-center gap-2 text-ink-soft">
+          <UsersRound size={16} aria-hidden />
+          <h2 className="text-[13px] font-bold tracking-wide uppercase">
+            Ukućani
+          </h2>
+        </div>
+        <ul className="mt-4 space-y-3">
+          {members.map((member) => (
+            <li key={member.id} className="flex items-center gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-ember-50 text-sm font-bold text-ember-700">
+                {member.displayName.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                {member.displayName}
+                {member.id === user?.id && (
+                  <span className="text-ink-faint"> (ja)</span>
+                )}
+              </span>
+              <Badge tone={member.role === 'Adult' ? 'ember' : 'neutral'}>
+                {member.role === 'Adult' ? 'Odrasli' : 'Dete'}
+              </Badge>
+            </li>
+          ))}
+        </ul>
+      </GlassCard>
+
+      <Link
+        to="/shopping"
+        className="group flex items-center gap-4 rounded-glass p-5 glass transition duration-200 hover:-translate-y-0.5 animate-fade-up [animation-delay:180ms]"
+      >
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-ember-50 text-ember-600">
+          <ShoppingBasket size={22} aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold text-ink">Lista za kupovinu</span>
+          <span className="mt-0.5 block text-[13px] text-ink-soft">
+            Šta nedostaje u kući?
+          </span>
+        </span>
+        <ChevronRight
+          size={18}
+          className="text-ink-faint transition group-hover:translate-x-0.5 group-hover:text-ember-600"
+          aria-hidden
+        />
+      </Link>
     </div>
+  )
+}
+
+function StatCard({
+  to,
+  icon,
+  value,
+  label,
+}: {
+  to: string
+  icon: React.ReactNode
+  value: number | string
+  label: string
+}) {
+  return (
+    <Link
+      to={to}
+      className="glass rounded-glass p-5 transition duration-200 hover:-translate-y-0.5"
+    >
+      <span className="flex size-9 items-center justify-center rounded-xl bg-ember-50 text-ember-600 [&>svg]:size-4.5">
+        {icon}
+      </span>
+      <span className="mt-3 block text-3xl font-bold tracking-tight text-ink tabular-nums">
+        {value}
+      </span>
+      <span className="mt-0.5 block text-[13px] font-medium text-ink-soft">
+        {label}
+      </span>
+    </Link>
   )
 }

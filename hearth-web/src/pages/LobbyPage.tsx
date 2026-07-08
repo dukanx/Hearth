@@ -1,17 +1,30 @@
 import { type FormEvent, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
+import {
+  ArrowLeft,
+  ChevronRight,
+  HousePlus,
+  KeyRound,
+  LogOut,
+  PartyPopper,
+} from 'lucide-react'
 import { createHousehold, joinHousehold } from '../api/households'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { JoinCodeDisplay } from '../features/lobby/JoinCodeDisplay'
+import { Wordmark } from '../components/Wordmark'
+import { GlassCard } from '../components/ui/GlassCard'
+import { Button } from '../components/ui/Button'
+import { ErrorBanner } from '../components/ui/ErrorBanner'
+import { Field, TextInput } from '../components/ui/Field'
 import type { Household } from '../types/household'
 
 type LobbyMode = 'choose' | 'create' | 'join' | 'created'
 
 export function LobbyPage() {
   const navigate = useNavigate()
-  const { user, logout, setSession } = useAuth()
+  const { logout, setSession } = useAuth()
   const [mode, setMode] = useState<LobbyMode>('choose')
   const [name, setName] = useState('')
   const [joinCode, setJoinCode] = useState('')
@@ -30,7 +43,7 @@ export function LobbyPage() {
       setError(
         err instanceof ApiError
           ? err.message
-          : 'Could not create household. Please try again.',
+          : 'Domaćinstvo nije napravljeno. Pokušaj ponovo.',
       )
     },
   })
@@ -45,7 +58,7 @@ export function LobbyPage() {
       setError(
         err instanceof ApiError
           ? err.message
-          : 'Could not join household. Please try again.',
+          : 'Pridruživanje nije uspelo. Pokušaj ponovo.',
       )
     },
   })
@@ -72,186 +85,203 @@ export function LobbyPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-16">
-      <div className="rounded-2xl border border-hearth-200 bg-white p-8 shadow-sm">
-        {mode === 'choose' && (
-          <>
-            <h1 className="text-2xl font-semibold text-stone-900">
-              Welcome{user?.email ? `, ${user.email}` : ''}
-            </h1>
-            <p className="mt-2 text-stone-600">
-              Create a new household or join an existing one with a 6-character
-              code.
-            </p>
+    <div className="flex min-h-dvh items-center justify-center px-5 py-12">
+      <div className="ambient" aria-hidden />
+      <div className="w-full max-w-md">
+        <div className="mb-8 flex justify-center animate-fade-up">
+          <Wordmark size="lg" />
+        </div>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => resetMode('create')}
-                className="flex-1 rounded-lg bg-hearth-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-hearth-800"
-              >
-                Create household
-              </button>
-              <button
-                type="button"
-                onClick={() => resetMode('join')}
-                className="flex-1 rounded-lg border border-hearth-300 px-4 py-2.5 text-sm font-semibold text-hearth-800 hover:bg-hearth-50"
-              >
-                Join with code
-              </button>
-            </div>
-          </>
-        )}
+        <GlassCard className="p-7 animate-fade-up [animation-delay:80ms]">
+          {mode === 'choose' && (
+            <>
+              <h1 className="text-xl font-bold tracking-tight text-ink">
+                Tvoje domaćinstvo
+              </h1>
+              <p className="mt-1 text-sm text-ink-soft">
+                Napravi novo ili se pridruži postojećem pomoću koda od 6
+                karaktera.
+              </p>
 
-        {mode === 'create' && (
-          <>
-            <button
-              type="button"
-              onClick={() => resetMode('choose')}
-              className="text-sm font-medium text-hearth-700 hover:underline"
-            >
-              ← Back
-            </button>
-            <h1 className="mt-4 text-2xl font-semibold text-stone-900">
-              Create household
-            </h1>
-            <p className="mt-2 text-stone-600">
-              You&apos;ll become the adult member and receive join codes for
-              others.
-            </p>
-
-            <form onSubmit={handleCreateSubmit} className="mt-6 space-y-4">
-              {error && <ErrorBanner message={error} />}
-
-              <label className="block">
-                <span className="text-sm font-medium text-stone-700">
-                  Household name
-                </span>
-                <input
-                  type="text"
-                  required
-                  maxLength={100}
-                  autoFocus
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Smith Family"
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 outline-none focus:border-hearth-500 focus:ring-2 focus:ring-hearth-200"
+              <div className="mt-6 space-y-3">
+                <OptionCard
+                  icon={<HousePlus />}
+                  title="Napravi domaćinstvo"
+                  description="Postaješ odrasli član i dobijaš kodove za ostale."
+                  onClick={() => resetMode('create')}
                 />
-              </label>
-
-              <button
-                type="submit"
-                disabled={createMutation.isPending || !name.trim()}
-                className="w-full rounded-lg bg-hearth-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-hearth-800 disabled:opacity-60"
-              >
-                {createMutation.isPending ? 'Creating…' : 'Create household'}
-              </button>
-            </form>
-          </>
-        )}
-
-        {mode === 'join' && (
-          <>
-            <button
-              type="button"
-              onClick={() => resetMode('choose')}
-              className="text-sm font-medium text-hearth-700 hover:underline"
-            >
-              ← Back
-            </button>
-            <h1 className="mt-4 text-2xl font-semibold text-stone-900">
-              Join household
-            </h1>
-            <p className="mt-2 text-stone-600">
-              Enter the 6-character code shared by a household member. Adult and
-              child codes assign different roles.
-            </p>
-
-            <form onSubmit={handleJoinSubmit} className="mt-6 space-y-4">
-              {error && <ErrorBanner message={error} />}
-
-              <label className="block">
-                <span className="text-sm font-medium text-stone-700">
-                  Join code
-                </span>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  value={joinCode}
-                  onChange={(e) => handleJoinCodeChange(e.target.value)}
-                  placeholder="ABC123"
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 font-mono text-lg tracking-widest text-stone-900 uppercase outline-none focus:border-hearth-500 focus:ring-2 focus:ring-hearth-200"
+                <OptionCard
+                  icon={<KeyRound />}
+                  title="Pridruži se kodom"
+                  description="Unesi kod koji ti je poslao član domaćinstva."
+                  onClick={() => resetMode('join')}
                 />
-                <p className="mt-1 text-xs text-stone-400">Exactly 6 characters</p>
-              </label>
+              </div>
+            </>
+          )}
 
-              <button
-                type="submit"
-                disabled={joinMutation.isPending || joinCode.length !== 6}
-                className="w-full rounded-lg bg-hearth-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-hearth-800 disabled:opacity-60"
+          {mode === 'create' && (
+            <>
+              <BackButton onClick={() => resetMode('choose')} />
+              <h1 className="mt-4 text-xl font-bold tracking-tight text-ink">
+                Novo domaćinstvo
+              </h1>
+              <p className="mt-1 text-sm text-ink-soft">
+                Daj mu ime — kodove za pridruživanje dobijaš odmah posle.
+              </p>
+
+              <form onSubmit={handleCreateSubmit} className="mt-6 space-y-4">
+                {error && <ErrorBanner message={error} />}
+
+                <Field label="Naziv domaćinstva">
+                  <TextInput
+                    type="text"
+                    required
+                    maxLength={100}
+                    autoFocus
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="npr. Dukići"
+                  />
+                </Field>
+
+                <Button
+                  type="submit"
+                  loading={createMutation.isPending}
+                  disabled={!name.trim()}
+                  className="w-full"
+                >
+                  Napravi domaćinstvo
+                </Button>
+              </form>
+            </>
+          )}
+
+          {mode === 'join' && (
+            <>
+              <BackButton onClick={() => resetMode('choose')} />
+              <h1 className="mt-4 text-xl font-bold tracking-tight text-ink">
+                Pridruži se
+              </h1>
+              <p className="mt-1 text-sm text-ink-soft">
+                Kod za odrasle i kod za decu dodeljuju različite uloge.
+              </p>
+
+              <form onSubmit={handleJoinSubmit} className="mt-6 space-y-4">
+                {error && <ErrorBanner message={error} />}
+
+                <Field label="Kod za pridruživanje" hint="Tačno 6 karaktera">
+                  <TextInput
+                    type="text"
+                    required
+                    autoFocus
+                    value={joinCode}
+                    onChange={(e) => handleJoinCodeChange(e.target.value)}
+                    placeholder="ABC123"
+                    className="text-center text-xl font-bold tracking-[0.35em] uppercase"
+                  />
+                </Field>
+
+                <Button
+                  type="submit"
+                  loading={joinMutation.isPending}
+                  disabled={joinCode.length !== 6}
+                  className="w-full"
+                >
+                  Pridruži se
+                </Button>
+              </form>
+            </>
+          )}
+
+          {mode === 'created' && createdHousehold && (
+            <>
+              <div className="flex size-12 items-center justify-center rounded-full bg-done-soft text-done">
+                <PartyPopper size={24} aria-hidden />
+              </div>
+              <h1 className="mt-4 text-xl font-bold tracking-tight text-ink">
+                {createdHousehold.name} je spremno
+              </h1>
+              <p className="mt-1 text-sm text-ink-soft">
+                Podeli kodove da se ukućani pridruže — ti si već odrasli član.
+              </p>
+
+              <div className="mt-6 space-y-3">
+                <JoinCodeDisplay
+                  label="Kod za odrasle"
+                  code={createdHousehold.adultJoinCode}
+                />
+                <JoinCodeDisplay
+                  label="Kod za decu"
+                  code={createdHousehold.childJoinCode}
+                />
+              </div>
+
+              <Button
+                onClick={() => navigate('/', { replace: true })}
+                className="mt-6 w-full"
               >
-                {joinMutation.isPending ? 'Joining…' : 'Join household'}
-              </button>
-            </form>
-          </>
-        )}
+                Uđi u Hearth
+              </Button>
+            </>
+          )}
 
-        {mode === 'created' && createdHousehold && (
-          <>
-            <h1 className="text-2xl font-semibold text-stone-900">
-              {createdHousehold.name} is ready
-            </h1>
-            <p className="mt-2 text-stone-600">
-              Share these codes so family members can join. You&apos;re set up as
-              an Adult.
-            </p>
-
-            <div className="mt-6 space-y-3">
-              <JoinCodeDisplay
-                label="Adult join code"
-                code={createdHousehold.adultJoinCode}
-              />
-              <JoinCodeDisplay
-                label="Child join code"
-                code={createdHousehold.childJoinCode}
-              />
+          {mode !== 'created' && (
+            <div className="mt-6 flex justify-center border-t border-line pt-5">
+              <Button variant="ghost" size="sm" onClick={logout}>
+                <LogOut size={14} aria-hidden />
+                Odjavi se
+              </Button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => navigate('/', { replace: true })}
-              className="mt-6 w-full rounded-lg bg-hearth-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-hearth-800"
-            >
-              Enter Hearth
-            </button>
-          </>
-        )}
-
-        {mode !== 'created' && (
-          <p className="mt-6 text-center text-sm text-stone-500">
-            <button
-              type="button"
-              onClick={logout}
-              className="font-medium text-hearth-700 hover:underline"
-            >
-              Sign out
-            </button>
-            {' · '}
-            <Link to="/login" className="font-medium text-hearth-700 hover:underline">
-              Back to login
-            </Link>
-          </p>
-        )}
+          )}
+        </GlassCard>
       </div>
     </div>
   )
 }
 
-function ErrorBanner({ message }: { message: string }) {
+function OptionCard({
+  icon,
+  title,
+  description,
+  onClick,
+}: {
+  icon: React.ReactNode
+  title: string
+  description: string
+  onClick: () => void
+}) {
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-      {message}
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex w-full items-center gap-4 rounded-2xl border border-line bg-white/70 p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-ember-500/40 hover:shadow-lg hover:shadow-ember-500/10 active:scale-[0.98]"
+    >
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-ember-50 text-ember-600 transition group-hover:bg-ember-500 group-hover:text-white [&>svg]:size-5.5">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-ink">{title}</span>
+        <span className="mt-0.5 block text-[13px] text-ink-soft">{description}</span>
+      </span>
+      <ChevronRight
+        size={18}
+        className="shrink-0 text-ink-faint transition group-hover:translate-x-0.5 group-hover:text-ember-600"
+        aria-hidden
+      />
+    </button>
+  )
+}
+
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-soft transition hover:text-ink"
+    >
+      <ArrowLeft size={16} aria-hidden />
+      Nazad
+    </button>
   )
 }

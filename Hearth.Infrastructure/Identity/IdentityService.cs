@@ -88,6 +88,20 @@ public sealed class IdentityService : IIdentityService
         return Result.Success<IReadOnlyList<Guid>>(ids);
     }
 
+    public async Task<Result<IReadOnlyList<UserDto>>> GetHouseholdMembersAsync(Guid householdId)
+    {
+        var users = await _userManager.Users
+            .Where(u => u.HouseholdId == householdId)
+            .OrderBy(u => u.DisplayName)
+            .ToListAsync();
+
+        var members = new List<UserDto>(users.Count);
+        foreach (var user in users)
+            members.Add(await MapAsync(user));
+
+        return Result.Success<IReadOnlyList<UserDto>>(members);
+    }
+
     private async Task<UserDto> MapAsync(ApplicationUser user)
     {
         // Korisnik u ovom domenu ima najviše jednu ulogu (Adult xor Child);

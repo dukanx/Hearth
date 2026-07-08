@@ -1,16 +1,136 @@
 @import 'tailwindcss';
 
+/*
+  Hearth dizajn sistem — "warm porcelain glass"
+  Topla porcelanska podloga, beli glass paneli, ember (žar) akcenat.
+  Semantičke boje (progress/done/danger) su odvojene od akcenta.
+*/
 @theme {
-  --color-hearth-50: #fffbeb;
-  --color-hearth-100: #fef3c7;
-  --color-hearth-200: #fde68a;
-  --color-hearth-500: #f59e0b;
-  --color-hearth-600: #d97706;
-  --color-hearth-700: #b45309;
-  --color-hearth-800: #92400e;
-  --color-hearth-900: #78350f;
+  /* Podloga i mastilo (toplo-neutralno, ne sivo) */
+  --color-ground: #f4f2ee;
+  --color-ink: #211d19;
+  --color-ink-soft: #6f675d;
+  --color-ink-faint: #a69d91;
+  --color-line: #e8e2d9;
+
+  /* Ember — žar ognjišta, jedini brend akcenat */
+  --color-ember-50: #fdf0e9;
+  --color-ember-100: #fbdfcf;
+  --color-ember-500: #ee5b2b;
+  --color-ember-600: #d94a1c;
+  --color-ember-700: #b53c15;
+  --color-ember-900: #7c2a10;
+
+  /* Semantika stanja */
+  --color-progress: #2e6be6;
+  --color-progress-soft: #e8eefc;
+  --color-done: #1f9d61;
+  --color-done-soft: #e2f5eb;
+  --color-danger: #dd3b3b;
+  --color-danger-soft: #fdeaea;
+
+  /* Sistemski stack — native osećaj (SF Pro na iOS-u, Segoe UI Variable na Win) */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text',
+    'Segoe UI', system-ui, sans-serif;
+
+  --radius-glass: 1.75rem;
+
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-pop-in: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-slide-up: slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.25s ease-out both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.94) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* Liquid glass panel — blur + saturacija + unutrašnji highlight */
+@utility glass {
+  background: color-mix(in srgb, white 62%, transparent);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid color-mix(in srgb, white 72%, transparent);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, white 85%, transparent),
+    0 8px 32px -12px rgb(33 26 18 / 0.18);
+}
+
+/* Varijanta za trake (top/bottom bar) — jači blur, bez spoljne senke na vrhu */
+@utility glass-bar {
+  background: color-mix(in srgb, white 55%, transparent);
+  backdrop-filter: blur(28px) saturate(1.7);
+  -webkit-backdrop-filter: blur(28px) saturate(1.7);
 }
 
 body {
-  @apply min-h-screen bg-hearth-50 text-stone-800 antialiased;
+  @apply bg-ground font-sans text-ink antialiased;
+  min-height: 100dvh;
+}
+
+/* Ambijent iza stakla — bez njega glass nema šta da prelama */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38rem 38rem at 12% -8%, rgb(238 91 43 / 0.16), transparent 62%),
+    radial-gradient(30rem 30rem at 90% 8%, rgb(46 107 230 / 0.1), transparent 65%),
+    radial-gradient(44rem 44rem at 50% 112%, rgb(238 91 43 / 0.09), transparent 60%);
+}
+
+/* Vidljiv fokus za tastaturu, bez okvira na klik */
+:focus-visible {
+  outline: 2px solid var(--color-ember-500);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

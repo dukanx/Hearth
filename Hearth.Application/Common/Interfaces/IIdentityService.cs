@@ -14,4 +14,7 @@ public interface IIdentityService
 
     // Id-jevi svih članova domaćinstva — za razašiljanje obaveštenja.
     Task<Result<IReadOnlyList<Guid>>> GetHouseholdMemberIdsAsync(Guid householdId);
+
+    // Puni profili članova (ime + uloga) — za prikaz na frontu (dodela zadataka i sl.).
+    Task<Result<IReadOnlyList<UserDto>>> GetHouseholdMembersAsync(Guid householdId);
 }

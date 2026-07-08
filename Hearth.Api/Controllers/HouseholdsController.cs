@@ -1,5 +1,6 @@
 using Hearth.Api.Extensions;
 using Hearth.Application.Features.Households.CreateHousehold;
+using Hearth.Application.Features.Households.GetHouseholdMembers;
 using Hearth.Application.Features.Households.JoinHousehold;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -23,4 +24,8 @@ public sealed class HouseholdsController : ControllerBase
     [HttpPost("join")]
     public async Task<IActionResult> Join(JoinHouseholdCommand command, CancellationToken ct)
         => (await _sender.Send(command, ct)).ToActionResult();
+
+    [HttpGet("members")]
+    public async Task<IActionResult> Members(CancellationToken ct)
+        => (await _sender.Send(new GetHouseholdMembersQuery(), ct)).ToActionResult();
 }

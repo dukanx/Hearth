@@ -19,3 +19,9 @@ export interface CreateHouseholdResponse {
 export interface JoinHouseholdRequest {
   joinCode: string
 }
+
+export interface HouseholdMember {
+  id: string
+  displayName: string
+  role: 'Adult' | 'Child' | null
+}

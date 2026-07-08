@@ -1,54 +1,75 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import { House, ListChecks, LogOut, ShoppingBasket } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
+import { Wordmark } from './Wordmark'
 
-function navClass({ isActive }: { isActive: boolean }) {
-  return isActive
-    ? 'rounded-lg bg-hearth-700 px-3 py-2 text-sm font-medium text-white'
-    : 'rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-hearth-100 hover:text-hearth-900'
-}
+const TABS = [
+  { to: '/', label: 'Početna', icon: House, end: true },
+  { to: '/tasks', label: 'Zadaci', icon: ListChecks, end: false },
+  { to: '/shopping', label: 'Kupovina', icon: ShoppingBasket, end: false },
+]
 
 export function AppLayout() {
   const { user, logout } = useAuth()
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-hearth-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link to="/" className="text-lg font-semibold text-hearth-800">
-            Hearth
+    <div className="min-h-dvh">
+      <div className="ambient" aria-hidden />
+
+      {/* Top bar — translucentna traka, iOS stil */}
+      <header className="glass-bar sticky top-0 z-40 border-b border-white/50">
+        <div className="mx-auto flex max-w-xl items-center justify-between px-5 py-3">
+          <Link to="/" aria-label="Hearth — početna">
+            <Wordmark />
           </Link>
 
-          <nav className="flex items-center gap-1">
-            <NavLink to="/" end className={navClass}>
-              Home
-            </NavLink>
-            <NavLink to="/tasks" className={navClass}>
-              Tasks
-            </NavLink>
-            <NavLink to="/shopping" className={navClass}>
-              Shopping
-            </NavLink>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-stone-500 sm:inline">
-              {user?.email}
-              {user?.role ? ` · ${user.role}` : ''}
+          <div className="flex items-center gap-2">
+            <span className="hidden max-w-40 truncate text-sm font-medium text-ink-soft sm:inline">
+              {user?.email.split('@')[0]}
             </span>
             <button
               type="button"
               onClick={logout}
-              className="rounded-lg border border-hearth-200 px-3 py-2 text-sm font-medium text-hearth-800 hover:bg-hearth-50"
+              aria-label="Odjavi se"
+              title="Odjavi se"
+              className="flex size-9 items-center justify-center rounded-full bg-ink/6 text-ink-soft transition hover:bg-ink/10 hover:text-ink active:scale-90"
             >
-              Log out
+              <LogOut size={16} />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="mx-auto max-w-xl px-5 pt-6 pb-32">
         <Outlet />
       </main>
+
+      {/* Plutajući tab bar — liquid glass pilula */}
+      <nav
+        aria-label="Glavna navigacija"
+        className="fixed inset-x-0 z-40 flex justify-center"
+        style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
+        <div className="glass flex gap-1 rounded-full p-1.5">
+          {TABS.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `flex w-19 flex-col items-center gap-0.5 rounded-full py-2 transition duration-200 active:scale-95 ${
+                  isActive
+                    ? 'bg-ember-500 text-white shadow-lg shadow-ember-500/30'
+                    : 'text-ink-soft hover:bg-ink/5 hover:text-ink'
+                }`
+              }
+            >
+              <Icon size={20} strokeWidth={2.25} aria-hidden />
+              <span className="text-[11px] font-semibold">{label}</span>
+            </NavLink>
+          ))}
+        </div>
+      </nav>
     </div>
   )
 }
