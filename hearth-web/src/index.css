@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-hearth-50: #fffbeb;
+  --color-hearth-100: #fef3c7;
+  --color-hearth-200: #fde68a;
+  --color-hearth-500: #f59e0b;
+  --color-hearth-600: #d97706;
+  --color-hearth-700: #b45309;
+  --color-hearth-800: #92400e;
+  --color-hearth-900: #78350f;
+}
+
+body {
+  @apply min-h-screen bg-hearth-50 text-stone-800 antialiased;
+}
