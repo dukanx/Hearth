@@ -36,15 +36,18 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<AppDbContext>();
 
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
+        services.Configure<VapidOptions>(configuration.GetSection("Vapid"));
 
         // Repository + Unit of Work (svi dele isti scoped AppDbContext / change-tracker).
         services.AddScoped<ITaskRepository, TaskRepository>();
         services.AddScoped<IShoppingItemRepository, ShoppingItemRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IHouseholdRepository, HouseholdRepository>();
+        services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<IPushNotifier, WebPushNotifier>();
         services.AddSingleton<ITokenService, TokenService>();
         services.AddSingleton<IJoinCodeGenerator, JoinCodeGenerator>();
 

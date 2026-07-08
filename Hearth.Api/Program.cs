@@ -9,12 +9,33 @@ using Hearth.Application.Common.Interfaces;
 using Hearth.Infrastructure;
 using Hearth.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Railway (i slični hostovi): PORT env promenljiva određuje gde slušamo.
+if (Environment.GetEnvironmentVariable("PORT") is { Length: > 0 } port)
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
+// Railway Postgres daje DATABASE_URL kao URI — konvertuj u Npgsql format
+// ako eksplicitan connection string nije postavljen.
+if (builder.Configuration.GetConnectionString("DefaultConnection") is null
+    && Environment.GetEnvironmentVariable("DATABASE_URL") is { Length: > 0 } databaseUrl)
+{
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':', 2);
+    builder.Configuration["ConnectionStrings:DefaultConnection"] =
+        $"Host={uri.Host};Port={(uri.Port > 0 ? uri.Port : 5432)};" +
+        $"Database={uri.AbsolutePath.TrimStart('/')};" +
+        $"Username={Uri.UnescapeDataString(userInfo[0])};" +
+        $"Password={Uri.UnescapeDataString(userInfo[1])};" +
+        "Ssl Mode=Require";
+}
 
 // --- Services ---
 
@@ -92,6 +113,15 @@ var app = builder.Build();
 
 // --- HTTP pipeline ---
 
+// Iza reverse proxy-ja (Railway): poštuj X-Forwarded-Proto/For da https radi ispravno.
+var forwardedOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor
+};
+forwardedOptions.KnownIPNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -101,14 +131,30 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// U produkciji API servira i frontend (React build u wwwroot).
+var serveSpa = File.Exists(Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html"));
+if (serveSpa)
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 
-// Seed Identity uloga (Adult/Child) pri pokretanju.
+// SPA fallback: nepoznate rute (npr. /tasks posle refresh-a) idu na index.html.
+if (serveSpa)
+    app.MapFallbackToFile("index.html");
+
+// Migracije + seed Identity uloga (Adult/Child) pri pokretanju.
 using (var scope = app.Services.CreateScope())
 {
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+
     var roleManager = scope.ServiceProvider
         .GetRequiredService<RoleManager<IdentityRole<Guid>>>();
     await IdentityDataSeeder.SeedRolesAsync(roleManager);

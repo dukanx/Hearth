@@ -11,19 +11,22 @@ public sealed class UnitOfWork : IUnitOfWork
         ITaskRepository tasks,
         IShoppingItemRepository shoppingItems,
         INotificationRepository notifications,
-        IHouseholdRepository households)
+        IHouseholdRepository households,
+        IPushSubscriptionRepository pushSubscriptions)
     {
         _context = context;
         Tasks = tasks;
         ShoppingItems = shoppingItems;
         Notifications = notifications;
         Households = households;
+        PushSubscriptions = pushSubscriptions;
     }
 
     public ITaskRepository Tasks { get; }
     public IShoppingItemRepository ShoppingItems { get; }
     public INotificationRepository Notifications { get; }
     public IHouseholdRepository Households { get; }
+    public IPushSubscriptionRepository PushSubscriptions { get; }
 
     // Jedna transakciona granica — AppDbContext.SaveChangesAsync radi i auditing (CreatedAt).
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

@@ -9,6 +9,7 @@ public interface IUnitOfWork
     IShoppingItemRepository ShoppingItems { get; }
     INotificationRepository Notifications { get; }
     IHouseholdRepository Households { get; }
+    IPushSubscriptionRepository PushSubscriptions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

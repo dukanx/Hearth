@@ -1,25 +1,33 @@
 using Hearth.Application.Common.Interfaces;
 using Hearth.Application.Common.Models;
 using Hearth.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace Hearth.Application.Common.Notifications;
 
 // Zajednička logika za sve okidače: nađe primaoce, upiše Notification redove
-// (istorija + mark-read) i gurne ih uživo. Kompoziciju poruke rade sami handleri.
+// (istorija + mark-read), gurne ih uživo (SignalR) i pošalje web push
+// (za zatvorenu aplikaciju). Kompoziciju poruke rade sami handleri.
 public sealed class NotificationBroadcaster
 {
     private readonly IUnitOfWork _uow;
     private readonly IIdentityService _identity;
     private readonly IRealtimeNotifier _realtime;
+    private readonly IPushNotifier _push;
+    private readonly ILogger<NotificationBroadcaster> _logger;
 
     public NotificationBroadcaster(
         IUnitOfWork uow,
         IIdentityService identity,
-        IRealtimeNotifier realtime)
+        IRealtimeNotifier realtime,
+        IPushNotifier push,
+        ILogger<NotificationBroadcaster> logger)
     {
         _uow = uow;
         _identity = identity;
         _realtime = realtime;
+        _push = push;
+        _logger = logger;
     }
 
     // Svi članovi domaćinstva osim navedenih (npr. aktera i, kod zadataka, dodeljenog).
@@ -81,6 +89,16 @@ public sealed class NotificationBroadcaster
                 notification.CreatedAt);
 
             await _realtime.SendToUserAsync(notification.RecipientUserId, dto, cancellationToken);
+        }
+
+        // Web push je best-effort: glavni zahtev je već commit-ovan i ne sme pasti zbog njega.
+        try
+        {
+            await _push.SendToUsersAsync(recipients, message, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Slanje web push obaveštenja nije uspelo.");
         }
     }
 }

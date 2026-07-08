@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bell, CheckCheck } from 'lucide-react'
+import { Bell, BellOff, BellRing, CheckCheck, Loader2 } from 'lucide-react'
 import {
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
 } from '../../api/notifications'
 import type { HearthNotification } from '../../types/notification'
+import { usePushSubscription } from './usePushSubscription'
 
 const REL_TIME = new Intl.RelativeTimeFormat('sr-Latn-RS', { numeric: 'auto' })
 
@@ -23,6 +24,7 @@ function formatRelative(value: string) {
 export function NotificationBell() {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
+  const push = usePushSubscription()
 
   const query = useQuery({
     queryKey: ['notifications'],
@@ -78,7 +80,7 @@ export function NotificationBell() {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-40 cursor-default"
           />
-          <div className="glass absolute right-0 z-50 mt-2 flex max-h-[26rem] w-80 max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-3xl animate-pop-in">
+          <div className="glass absolute right-0 z-50 mt-2 flex max-h-104 w-80 max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-3xl animate-pop-in">
             <div className="flex items-center justify-between gap-3 border-b border-line/70 px-4 py-3">
               <h2 className="text-sm font-bold text-ink">Obaveštenja</h2>
               {unreadCount > 0 && (
@@ -108,6 +110,7 @@ export function NotificationBell() {
               )}
 
               {notifications.map((notification) => (
+
                 <button
                   key={notification.id}
                   type="button"
@@ -139,6 +142,40 @@ export function NotificationBell() {
                 </button>
               ))}
             </div>
+
+            {/* Sistemske push notifikacije — vidljivo samo kad postoji service worker (production build) */}
+            {push.status !== 'unsupported' && (
+              <div className="flex items-center justify-between gap-3 border-t border-line/70 px-4 py-3">
+                <span className="text-xs font-semibold text-ink-soft">
+                  {push.status === 'denied'
+                    ? 'Notifikacije su blokirane u browseru'
+                    : 'Obaveštenja i kad je app zatvorena'}
+                </span>
+                {push.status !== 'denied' && (
+                  <button
+                    type="button"
+                    disabled={push.status === 'busy'}
+                    onClick={() =>
+                      push.status === 'on' ? push.disable() : push.enable()
+                    }
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 disabled:opacity-60 ${
+                      push.status === 'on'
+                        ? 'bg-ember-50 text-ember-700 hover:bg-ember-100'
+                        : 'bg-ink/6 text-ink-soft hover:bg-ink/10 hover:text-ink'
+                    }`}
+                  >
+                    {push.status === 'busy' ? (
+                      <Loader2 size={13} className="animate-spin" aria-hidden />
+                    ) : push.status === 'on' ? (
+                      <BellRing size={13} aria-hidden />
+                    ) : (
+                      <BellOff size={13} aria-hidden />
+                    )}
+                    {push.status === 'on' ? 'Uključeno' : 'Uključi'}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </>
       )}

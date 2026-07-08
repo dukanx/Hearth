@@ -16,6 +16,7 @@ public class AppDbContext
     public DbSet<HouseholdTask> HouseholdTasks => Set<HouseholdTask>();
     public DbSet<ShoppingItem> ShoppingItems => Set<ShoppingItem>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -74,6 +75,17 @@ public class AppDbContext
                   .WithMany()
                   .HasForeignKey(n => n.HouseholdId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<PushSubscription>(entity =>
+        {
+            entity.Property(s => s.Endpoint).IsRequired().HasMaxLength(2000);
+            entity.Property(s => s.P256dh).IsRequired().HasMaxLength(500);
+            entity.Property(s => s.Auth).IsRequired().HasMaxLength(500);
+
+            // Isti browser ne sme imati duple pretplate.
+            entity.HasIndex(s => s.Endpoint).IsUnique();
+            entity.HasIndex(s => s.UserId);
         });
 
       

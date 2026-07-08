@@ -43,11 +43,27 @@ export default defineConfig({
       workbox: {
         navigateFallback: '/index.html',
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        importScripts: ['push-sw.js'],
       },
     }),
   ],
   server: {
     port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5245',
+        changeOrigin: true,
+      },
+      '/hubs': {
+        target: 'http://localhost:5245',
+        changeOrigin: true,
+        ws: true,
+      },
+    },
+  },
+  // "npm run preview" servira production build (sa service workerom) — za lokalni test push-a.
+  preview: {
+    port: 4173,
     proxy: {
       '/api': {
         target: 'http://localhost:5245',
