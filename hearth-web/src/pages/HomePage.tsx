@@ -8,6 +8,7 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { getTasks } from '../api/tasks'
+import { getShoppingItems } from '../api/shopping'
 import { useAuth } from '../auth/AuthContext'
 import { useMembers } from '../features/household/useMembers'
 import { GlassCard } from '../components/ui/GlassCard'
@@ -35,9 +36,15 @@ export function HomePage() {
     queryFn: () => getTasks(),
   })
 
+  const shoppingQuery = useQuery({
+    queryKey: ['shopping', 'Needed'],
+    queryFn: () => getShoppingItems('Needed'),
+  })
+
   const tasks = tasksQuery.data ?? []
   const openTasks = tasks.filter((t) => t.status !== 'Done')
   const myOpenTasks = openTasks.filter((t) => t.assignedToUserId === user?.id)
+  const neededCount = shoppingQuery.data?.length ?? 0
 
   return (
     <div className="space-y-6">
@@ -103,7 +110,9 @@ export function HomePage() {
         <span className="min-w-0 flex-1">
           <span className="block font-semibold text-ink">Lista za kupovinu</span>
           <span className="mt-0.5 block text-[13px] text-ink-soft">
-            Šta nedostaje u kući?
+            {neededCount > 0
+              ? `${neededCount} ${neededCount === 1 ? 'stavka čeka' : 'stavki čeka'}`
+              : 'Šta nedostaje u kući?'}
           </span>
         </span>
         <ChevronRight
