@@ -2,19 +2,18 @@ using Hearth.Application.Common;
 using Hearth.Application.Common.Interfaces;
 using Hearth.Application.Common.Models;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hearth.Application.Features.Notifications.GetNotifications;
 
 public sealed class GetNotificationsQueryHandler
     : IRequestHandler<GetNotificationsQuery, Result<IReadOnlyList<NotificationDto>>>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentUser _currentUser;
 
-    public GetNotificationsQueryHandler(IApplicationDbContext db, ICurrentUser currentUser)
+    public GetNotificationsQueryHandler(IUnitOfWork uow, ICurrentUser currentUser)
     {
-        _db = db;
+        _uow = uow;
         _currentUser = currentUser;
     }
 
@@ -24,15 +23,14 @@ public sealed class GetNotificationsQueryHandler
             return Error.Unauthorized("Nedostaje identitet korisnika.", "Auth.NoIdentity");
 
         // Primalac je uvek trenutni korisnik — obaveštenja su lična.
-        var query = _db.Notifications.Where(n => n.RecipientUserId == userId);
+        var notifications = await _uow.Notifications.ListAsync(
+            n => n.RecipientUserId == userId && (!request.UnreadOnly || !n.IsRead),
+            cancellationToken);
 
-        if (request.UnreadOnly)
-            query = query.Where(n => !n.IsRead);
-
-        var items = await query
+        var items = notifications
             .OrderByDescending(n => n.CreatedAt)
             .Select(n => new NotificationDto(n.Id, n.Message, n.IsRead, n.CreatedAt))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return Result.Success<IReadOnlyList<NotificationDto>>(items);
     }

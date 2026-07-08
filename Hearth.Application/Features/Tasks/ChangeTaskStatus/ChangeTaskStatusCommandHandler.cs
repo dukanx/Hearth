@@ -2,19 +2,18 @@ using Hearth.Application.Common;
 using Hearth.Application.Common.Interfaces;
 using Hearth.Application.Common.Models;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hearth.Application.Features.Tasks.ChangeTaskStatus;
 
 public sealed class ChangeTaskStatusCommandHandler
     : IRequestHandler<ChangeTaskStatusCommand, Result<TaskDto>>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentUser _currentUser;
 
-    public ChangeTaskStatusCommandHandler(IApplicationDbContext db, ICurrentUser currentUser)
+    public ChangeTaskStatusCommandHandler(IUnitOfWork uow, ICurrentUser currentUser)
     {
-        _db = db;
+        _uow = uow;
         _currentUser = currentUser;
     }
 
@@ -26,7 +25,7 @@ public sealed class ChangeTaskStatusCommandHandler
         if (_currentUser.HouseholdId is not { } householdId)
             return Error.Forbidden("Nisi član nijednog domaćinstva.", "Household.NotMember");
 
-        var task = await _db.HouseholdTasks.FirstOrDefaultAsync(
+        var task = await _uow.Tasks.FirstOrDefaultAsync(
             t => t.Id == request.TaskId && t.HouseholdId == householdId, cancellationToken);
 
         if (task is null)
@@ -46,7 +45,9 @@ public sealed class ChangeTaskStatusCommandHandler
                 $"Nevažeći prelaz statusa: {task.Status} -> {request.Status}.", "Task.InvalidTransition");
 
         task.Status = request.Status;
-        await _db.SaveChangesAsync(cancellationToken);
+
+        _uow.Tasks.Update(task);
+        await _uow.SaveChangesAsync(cancellationToken);
 
         return task.ToDto();
     }

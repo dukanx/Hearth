@@ -3,27 +3,26 @@ using Hearth.Application.Common.Interfaces;
 using Hearth.Application.Common.Models;
 using Hearth.Domain.Entities;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hearth.Application.Features.Households.CreateHousehold;
 
 public sealed class CreateHouseholdCommandHandler
     : IRequestHandler<CreateHouseholdCommand, Result<CreateHouseholdResponse>>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly IIdentityService _identity;
     private readonly ITokenService _tokens;
     private readonly IJoinCodeGenerator _codes;
     private readonly ICurrentUser _currentUser;
 
     public CreateHouseholdCommandHandler(
-        IApplicationDbContext db,
+        IUnitOfWork uow,
         IIdentityService identity,
         ITokenService tokens,
         IJoinCodeGenerator codes,
         ICurrentUser currentUser)
     {
-        _db = db;
+        _uow = uow;
         _identity = identity;
         _tokens = tokens;
         _codes = codes;
@@ -55,8 +54,8 @@ public sealed class CreateHouseholdCommandHandler
             ChildJoinCode = childCode
         };
 
-        _db.Households.Add(household);
-        await _db.SaveChangesAsync(cancellationToken);
+        _uow.Households.Add(household);
+        await _uow.SaveChangesAsync(cancellationToken);
 
         var assigned = await _identity.AssignToHouseholdAsync(userId, household.Id, Roles.Adult);
         if (assigned.IsFailure)
@@ -79,10 +78,7 @@ public sealed class CreateHouseholdCommandHandler
             if (code == exclude)
                 continue;
 
-            var taken = await _db.Households.AnyAsync(
-                h => h.AdultJoinCode == code || h.ChildJoinCode == code, ct);
-
-            if (!taken)
+            if (!await _uow.Households.JoinCodeExistsAsync(code, ct))
                 return code;
         }
     }

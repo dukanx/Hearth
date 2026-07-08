@@ -10,13 +10,13 @@ namespace Hearth.Application.Features.Shopping.CreateShoppingItem;
 public sealed class CreateShoppingItemCommandHandler
     : IRequestHandler<CreateShoppingItemCommand, Result<ShoppingItemDto>>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentUser _currentUser;
     private readonly IPublisher _publisher;
 
-    public CreateShoppingItemCommandHandler(IApplicationDbContext db, ICurrentUser currentUser, IPublisher publisher)
+    public CreateShoppingItemCommandHandler(IUnitOfWork uow, ICurrentUser currentUser, IPublisher publisher)
     {
-        _db = db;
+        _uow = uow;
         _currentUser = currentUser;
         _publisher = publisher;
     }
@@ -37,8 +37,8 @@ public sealed class CreateShoppingItemCommandHandler
             RequestedByUserId = userId
         };
 
-        _db.ShoppingItems.Add(item);
-        await _db.SaveChangesAsync(cancellationToken);
+        _uow.ShoppingItems.Add(item);
+        await _uow.SaveChangesAsync(cancellationToken);
 
         // Tek posle uspešnog commita — obavesti ostale članove.
         await _publisher.Publish(

@@ -2,25 +2,24 @@ using Hearth.Application.Common;
 using Hearth.Application.Common.Interfaces;
 using Hearth.Application.Common.Models;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hearth.Application.Features.Households.JoinHousehold;
 
 public sealed class JoinHouseholdCommandHandler
     : IRequestHandler<JoinHouseholdCommand, Result<AuthResponse>>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly IIdentityService _identity;
     private readonly ITokenService _tokens;
     private readonly ICurrentUser _currentUser;
 
     public JoinHouseholdCommandHandler(
-        IApplicationDbContext db,
+        IUnitOfWork uow,
         IIdentityService identity,
         ITokenService tokens,
         ICurrentUser currentUser)
     {
-        _db = db;
+        _uow = uow;
         _identity = identity;
         _tokens = tokens;
         _currentUser = currentUser;
@@ -42,9 +41,7 @@ public sealed class JoinHouseholdCommandHandler
 
         var code = request.JoinCode.Trim().ToUpperInvariant();
 
-        var household = await _db.Households.FirstOrDefaultAsync(
-            h => h.AdultJoinCode == code || h.ChildJoinCode == code, cancellationToken);
-
+        var household = await _uow.Households.GetByJoinCodeAsync(code, cancellationToken);
         if (household is null)
             return Error.NotFound("Nevažeći kod za pridruživanje.", "Household.CodeNotFound");
 

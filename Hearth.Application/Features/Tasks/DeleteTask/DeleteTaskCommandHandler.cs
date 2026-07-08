@@ -1,18 +1,17 @@
 using Hearth.Application.Common;
 using Hearth.Application.Common.Interfaces;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hearth.Application.Features.Tasks.DeleteTask;
 
 public sealed class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand, Result>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentUser _currentUser;
 
-    public DeleteTaskCommandHandler(IApplicationDbContext db, ICurrentUser currentUser)
+    public DeleteTaskCommandHandler(IUnitOfWork uow, ICurrentUser currentUser)
     {
-        _db = db;
+        _uow = uow;
         _currentUser = currentUser;
     }
 
@@ -21,14 +20,14 @@ public sealed class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand
         if (_currentUser.HouseholdId is not { } householdId)
             return Result.Failure(Error.Forbidden("Nisi član nijednog domaćinstva.", "Household.NotMember"));
 
-        var task = await _db.HouseholdTasks.FirstOrDefaultAsync(
+        var task = await _uow.Tasks.FirstOrDefaultAsync(
             t => t.Id == request.TaskId && t.HouseholdId == householdId, cancellationToken);
 
         if (task is null)
             return Result.Failure(Error.NotFound("Zadatak nije pronađen.", "Task.NotFound"));
 
-        _db.HouseholdTasks.Remove(task);
-        await _db.SaveChangesAsync(cancellationToken);
+        _uow.Tasks.Remove(task);
+        await _uow.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

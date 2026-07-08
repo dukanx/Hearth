@@ -1,4 +1,3 @@
-using Hearth.Application.Common.Interfaces;
 using Hearth.Domain.Common;
 using Hearth.Domain.Entities;
 using Hearth.Infrastructure.Identity;
@@ -9,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Hearth.Infrastructure.Persistence;
 
 public class AppDbContext
-    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IApplicationDbContext
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 

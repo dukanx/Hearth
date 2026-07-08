@@ -8,16 +8,16 @@ namespace Hearth.Application.Common.Notifications;
 // (istorija + mark-read) i gurne ih uživo. Kompoziciju poruke rade sami handleri.
 public sealed class NotificationBroadcaster
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly IIdentityService _identity;
     private readonly IRealtimeNotifier _realtime;
 
     public NotificationBroadcaster(
-        IApplicationDbContext db,
+        IUnitOfWork uow,
         IIdentityService identity,
         IRealtimeNotifier realtime)
     {
-        _db = db;
+        _uow = uow;
         _identity = identity;
         _realtime = realtime;
     }
@@ -67,10 +67,10 @@ public sealed class NotificationBroadcaster
             .ToList();
 
         foreach (var notification in notifications)
-            _db.Notifications.Add(notification);
+            _uow.Notifications.Add(notification);
 
         // CreatedAt postavlja SaveChanges override; Id se generiše ovde.
-        await _db.SaveChangesAsync(cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
 
         foreach (var notification in notifications)
         {

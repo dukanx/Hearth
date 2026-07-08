@@ -3,25 +3,24 @@ using Hearth.Application.Common.Interfaces;
 using Hearth.Application.Common.Models;
 using Hearth.Application.Common.Notifications.Events;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hearth.Application.Features.Tasks.AssignTask;
 
 public sealed class AssignTaskCommandHandler
     : IRequestHandler<AssignTaskCommand, Result<TaskDto>>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly IIdentityService _identity;
     private readonly ICurrentUser _currentUser;
     private readonly IPublisher _publisher;
 
     public AssignTaskCommandHandler(
-        IApplicationDbContext db,
+        IUnitOfWork uow,
         IIdentityService identity,
         ICurrentUser currentUser,
         IPublisher publisher)
     {
-        _db = db;
+        _uow = uow;
         _identity = identity;
         _currentUser = currentUser;
         _publisher = publisher;
@@ -36,7 +35,7 @@ public sealed class AssignTaskCommandHandler
         if (_currentUser.HouseholdId is not { } householdId)
             return Error.Forbidden("Nisi član nijednog domaćinstva.", "Household.NotMember");
 
-        var task = await _db.HouseholdTasks.FirstOrDefaultAsync(
+        var task = await _uow.Tasks.FirstOrDefaultAsync(
             t => t.Id == request.TaskId && t.HouseholdId == householdId, cancellationToken);
 
         if (task is null)
@@ -53,7 +52,9 @@ public sealed class AssignTaskCommandHandler
         }
 
         task.AssignedToUserId = request.AssignedToUserId;
-        await _db.SaveChangesAsync(cancellationToken);
+
+        _uow.Tasks.Update(task);
+        await _uow.SaveChangesAsync(cancellationToken);
 
         // Tek posle commita — ako je (novom) korisniku dodeljeno, obavesti ga lično.
         if (task.AssignedToUserId is { } notifyAssigneeId)

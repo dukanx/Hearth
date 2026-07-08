@@ -2,19 +2,18 @@ using Hearth.Application.Common;
 using Hearth.Application.Common.Interfaces;
 using Hearth.Application.Common.Models;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hearth.Application.Features.Tasks.GetTasks;
 
 public sealed class GetTasksQueryHandler
     : IRequestHandler<GetTasksQuery, Result<IReadOnlyList<TaskDto>>>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentUser _currentUser;
 
-    public GetTasksQueryHandler(IApplicationDbContext db, ICurrentUser currentUser)
+    public GetTasksQueryHandler(IUnitOfWork uow, ICurrentUser currentUser)
     {
-        _db = db;
+        _uow = uow;
         _currentUser = currentUser;
     }
 
@@ -23,27 +22,17 @@ public sealed class GetTasksQueryHandler
         if (_currentUser.HouseholdId is not { } householdId)
             return Error.Forbidden("Nisi član nijednog domaćinstva.", "Household.NotMember");
 
-        var query = _db.HouseholdTasks.Where(t => t.HouseholdId == householdId);
+        // Opcioni filteri se sklapaju u jedan predikat (null uslovi se poklope pri prevodu u SQL).
+        var tasks = await _uow.Tasks.ListAsync(
+            t => t.HouseholdId == householdId
+                 && (request.Status == null || t.Status == request.Status)
+                 && (request.AssignedToUserId == null || t.AssignedToUserId == request.AssignedToUserId),
+            cancellationToken);
 
-        if (request.Status is { } status)
-            query = query.Where(t => t.Status == status);
-
-        if (request.AssignedToUserId is { } assignee)
-            query = query.Where(t => t.AssignedToUserId == assignee);
-
-        var items = await query
+        var items = tasks
             .OrderByDescending(t => t.CreatedAt)
-            .Select(t => new TaskDto(
-                t.Id,
-                t.Title,
-                t.Description,
-                t.Status,
-                t.Priority,
-                t.DueDate,
-                t.AssignedToUserId,
-                t.CreatedByUserId,
-                t.CreatedAt))
-            .ToListAsync(cancellationToken);
+            .Select(t => t.ToDto())
+            .ToList();
 
         return Result.Success<IReadOnlyList<TaskDto>>(items);
     }

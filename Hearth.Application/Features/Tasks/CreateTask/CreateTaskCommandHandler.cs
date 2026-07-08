@@ -11,18 +11,18 @@ namespace Hearth.Application.Features.Tasks.CreateTask;
 public sealed class CreateTaskCommandHandler
     : IRequestHandler<CreateTaskCommand, Result<TaskDto>>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly IIdentityService _identity;
     private readonly ICurrentUser _currentUser;
     private readonly IPublisher _publisher;
 
     public CreateTaskCommandHandler(
-        IApplicationDbContext db,
+        IUnitOfWork uow,
         IIdentityService identity,
         ICurrentUser currentUser,
         IPublisher publisher)
     {
-        _db = db;
+        _uow = uow;
         _identity = identity;
         _currentUser = currentUser;
         _publisher = publisher;
@@ -60,8 +60,8 @@ public sealed class CreateTaskCommandHandler
             AssignedToUserId = assignee
         };
 
-        _db.HouseholdTasks.Add(task);
-        await _db.SaveChangesAsync(cancellationToken);
+        _uow.Tasks.Add(task);
+        await _uow.SaveChangesAsync(cancellationToken);
 
         // Tek posle commita — opšte "nov zadatak" + lična poruka dodeljenom (ako postoji).
         await _publisher.Publish(

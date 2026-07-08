@@ -1,6 +1,7 @@
 using Hearth.Application.Common.Interfaces;
 using Hearth.Infrastructure.Identity;
 using Hearth.Infrastructure.Persistence;
+using Hearth.Infrastructure.Persistence.Repositories;
 using Hearth.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +37,13 @@ public static class DependencyInjection
 
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
 
-        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        // Repository + Unit of Work (svi dele isti scoped AppDbContext / change-tracker).
+        services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<IShoppingItemRepository, ShoppingItemRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IHouseholdRepository, HouseholdRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddSingleton<ITokenService, TokenService>();
         services.AddSingleton<IJoinCodeGenerator, JoinCodeGenerator>();

@@ -1,18 +1,17 @@
 using Hearth.Application.Common;
 using Hearth.Application.Common.Interfaces;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hearth.Application.Features.Notifications.MarkNotificationRead;
 
 public sealed class MarkNotificationReadCommandHandler : IRequestHandler<MarkNotificationReadCommand, Result>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentUser _currentUser;
 
-    public MarkNotificationReadCommandHandler(IApplicationDbContext db, ICurrentUser currentUser)
+    public MarkNotificationReadCommandHandler(IUnitOfWork uow, ICurrentUser currentUser)
     {
-        _db = db;
+        _uow = uow;
         _currentUser = currentUser;
     }
 
@@ -21,7 +20,7 @@ public sealed class MarkNotificationReadCommandHandler : IRequestHandler<MarkNot
         if (_currentUser.Id is not { } userId)
             return Result.Failure(Error.Unauthorized("Nedostaje identitet korisnika.", "Auth.NoIdentity"));
 
-        var notification = await _db.Notifications.FirstOrDefaultAsync(
+        var notification = await _uow.Notifications.FirstOrDefaultAsync(
             n => n.Id == request.NotificationId && n.RecipientUserId == userId, cancellationToken);
 
         if (notification is null)
@@ -30,7 +29,8 @@ public sealed class MarkNotificationReadCommandHandler : IRequestHandler<MarkNot
         if (!notification.IsRead)
         {
             notification.IsRead = true;
-            await _db.SaveChangesAsync(cancellationToken);
+            _uow.Notifications.Update(notification);
+            await _uow.SaveChangesAsync(cancellationToken);
         }
 
         return Result.Success();

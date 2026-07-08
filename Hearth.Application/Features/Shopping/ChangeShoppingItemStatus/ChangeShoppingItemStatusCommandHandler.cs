@@ -4,20 +4,19 @@ using Hearth.Application.Common.Models;
 using Hearth.Application.Common.Notifications.Events;
 using Hearth.Domain.Enums;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hearth.Application.Features.Shopping.ChangeShoppingItemStatus;
 
 public sealed class ChangeShoppingItemStatusCommandHandler
     : IRequestHandler<ChangeShoppingItemStatusCommand, Result<ShoppingItemDto>>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentUser _currentUser;
     private readonly IPublisher _publisher;
 
-    public ChangeShoppingItemStatusCommandHandler(IApplicationDbContext db, ICurrentUser currentUser, IPublisher publisher)
+    public ChangeShoppingItemStatusCommandHandler(IUnitOfWork uow, ICurrentUser currentUser, IPublisher publisher)
     {
-        _db = db;
+        _uow = uow;
         _currentUser = currentUser;
         _publisher = publisher;
     }
@@ -30,7 +29,7 @@ public sealed class ChangeShoppingItemStatusCommandHandler
         if (_currentUser.HouseholdId is not { } householdId)
             return Error.Forbidden("Nisi član nijednog domaćinstva.", "Household.NotMember");
 
-        var item = await _db.ShoppingItems.FirstOrDefaultAsync(
+        var item = await _uow.ShoppingItems.FirstOrDefaultAsync(
             i => i.Id == request.ItemId && i.HouseholdId == householdId, cancellationToken);
 
         if (item is null)
@@ -39,13 +38,14 @@ public sealed class ChangeShoppingItemStatusCommandHandler
         if (item.Status == request.Status)
             return Error.Validation("Stavka je već u tom statusu.", "Shopping.SameStatus");
 
-        // Rich domain: postavlja/čisti BoughtByUserId + BoughtAt (podatak za Blok E).
+        // Rich domain: postavlja/čisti BoughtByUserId + BoughtAt (podatak za notifikacije).
         if (request.Status == ShoppingItemStatus.Bought)
             item.MarkBought(userId);
         else
             item.MarkNeeded();
 
-        await _db.SaveChangesAsync(cancellationToken);
+        _uow.ShoppingItems.Update(item);
+        await _uow.SaveChangesAsync(cancellationToken);
 
         // Obaveštavamo samo o kupovini (ne o vraćanju u Needed), tek posle commita.
         if (request.Status == ShoppingItemStatus.Bought)
