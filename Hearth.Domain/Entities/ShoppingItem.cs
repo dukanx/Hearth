@@ -5,14 +5,29 @@ namespace Hearth.Domain.Entities;
 
 public class ShoppingItem : BaseEntity
 {
-	public string Name { get; set; } = string.Empty;
-	public int Quantity { get; set; } = 1;
-	public ShoppingItemStatus Status { get; set; } = ShoppingItemStatus.Needed;
+    public string Name { get; set; } = string.Empty;
+    public int Quantity { get; set; } = 1;
+    public ShoppingItemStatus Status { get; set; } = ShoppingItemStatus.Needed;
 
-	public Guid HouseholdId { get; set; }
-	public Household Household { get; set; } = null!;
+    public Guid HouseholdId { get; set; }
+    public Household Household { get; set; } = null!;
 
-	public Guid RequestedByUserId { get; set; }
-	public Guid? BoughtByUserId { get; set; }
-	public DateTime? BoughtAt { get; set; }
+    public Guid RequestedByUserId { get; set; }
+    public Guid? BoughtByUserId { get; set; }
+    public DateTime? BoughtAt { get; set; }
+
+    // BoughtByUserId je podatak koji Blok E koristi za "X je kupio Y" -> svi sem X-a.
+    public void MarkBought(Guid userId)
+    {
+        Status = ShoppingItemStatus.Bought;
+        BoughtByUserId = userId;
+        BoughtAt = DateTime.UtcNow;
+    }
+
+    public void MarkNeeded()
+    {
+        Status = ShoppingItemStatus.Needed;
+        BoughtByUserId = null;
+        BoughtAt = null;
+    }
 }
