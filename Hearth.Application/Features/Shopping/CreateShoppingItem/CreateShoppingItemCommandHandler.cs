@@ -1,6 +1,7 @@
 using Hearth.Application.Common;
 using Hearth.Application.Common.Interfaces;
 using Hearth.Application.Common.Models;
+using Hearth.Application.Common.Notifications.Events;
 using Hearth.Domain.Entities;
 using MediatR;
 
@@ -11,11 +12,13 @@ public sealed class CreateShoppingItemCommandHandler
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUser _currentUser;
+    private readonly IPublisher _publisher;
 
-    public CreateShoppingItemCommandHandler(IApplicationDbContext db, ICurrentUser currentUser)
+    public CreateShoppingItemCommandHandler(IApplicationDbContext db, ICurrentUser currentUser, IPublisher publisher)
     {
         _db = db;
         _currentUser = currentUser;
+        _publisher = publisher;
     }
 
     public async Task<Result<ShoppingItemDto>> Handle(CreateShoppingItemCommand request, CancellationToken cancellationToken)
@@ -36,6 +39,10 @@ public sealed class CreateShoppingItemCommandHandler
 
         _db.ShoppingItems.Add(item);
         await _db.SaveChangesAsync(cancellationToken);
+
+        // Tek posle uspešnog commita — obavesti ostale članove.
+        await _publisher.Publish(
+            new ShoppingItemAddedEvent(householdId, userId, item.Name), cancellationToken);
 
         return item.ToDto();
     }

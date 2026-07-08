@@ -1,6 +1,7 @@
 using Hearth.Application.Common;
 using Hearth.Application.Common.Interfaces;
 using Hearth.Application.Common.Models;
+using Hearth.Application.Common.Notifications.Events;
 using Hearth.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -12,11 +13,13 @@ public sealed class ChangeShoppingItemStatusCommandHandler
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUser _currentUser;
+    private readonly IPublisher _publisher;
 
-    public ChangeShoppingItemStatusCommandHandler(IApplicationDbContext db, ICurrentUser currentUser)
+    public ChangeShoppingItemStatusCommandHandler(IApplicationDbContext db, ICurrentUser currentUser, IPublisher publisher)
     {
         _db = db;
         _currentUser = currentUser;
+        _publisher = publisher;
     }
 
     public async Task<Result<ShoppingItemDto>> Handle(ChangeShoppingItemStatusCommand request, CancellationToken cancellationToken)
@@ -43,6 +46,11 @@ public sealed class ChangeShoppingItemStatusCommandHandler
             item.MarkNeeded();
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        // Obaveštavamo samo o kupovini (ne o vraćanju u Needed), tek posle commita.
+        if (request.Status == ShoppingItemStatus.Bought)
+            await _publisher.Publish(
+                new ShoppingItemBoughtEvent(householdId, userId, item.Name), cancellationToken);
 
         return item.ToDto();
     }

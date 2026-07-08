@@ -2,6 +2,7 @@ using Hearth.Application.Common;
 using Hearth.Application.Common.Interfaces;
 using Hearth.Application.Common.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hearth.Infrastructure.Identity;
 
@@ -75,6 +76,16 @@ public sealed class IdentityService : IIdentityService
                 string.Join("; ", roleResult.Errors.Select(e => e.Description)), "Auth.RoleAssignFailed");
 
         return await MapAsync(user);
+    }
+
+    public async Task<Result<IReadOnlyList<Guid>>> GetHouseholdMemberIdsAsync(Guid householdId)
+    {
+        var ids = await _userManager.Users
+            .Where(u => u.HouseholdId == householdId)
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        return Result.Success<IReadOnlyList<Guid>>(ids);
     }
 
     private async Task<UserDto> MapAsync(ApplicationUser user)

@@ -1,5 +1,6 @@
 using FluentValidation;
 using Hearth.Application.Common.Behaviors;
+using Hearth.Application.Common.Notifications;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,6 +15,8 @@ public static class DependencyInjection
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+        services.AddScoped<NotificationBroadcaster>();
 
         return services;
     }

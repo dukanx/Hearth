@@ -1,6 +1,7 @@
 using Hearth.Application.Common;
 using Hearth.Application.Common.Interfaces;
 using Hearth.Application.Common.Models;
+using Hearth.Application.Common.Notifications.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,19 +13,25 @@ public sealed class AssignTaskCommandHandler
     private readonly IApplicationDbContext _db;
     private readonly IIdentityService _identity;
     private readonly ICurrentUser _currentUser;
+    private readonly IPublisher _publisher;
 
     public AssignTaskCommandHandler(
         IApplicationDbContext db,
         IIdentityService identity,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IPublisher publisher)
     {
         _db = db;
         _identity = identity;
         _currentUser = currentUser;
+        _publisher = publisher;
     }
 
     public async Task<Result<TaskDto>> Handle(AssignTaskCommand request, CancellationToken cancellationToken)
     {
+        if (_currentUser.Id is not { } actorId)
+            return Error.Unauthorized("Nedostaje identitet korisnika.", "Auth.NoIdentity");
+
         // Uloga (Adult) je već sprovedena na endpointu; ovde je scope + provera domaćinstva.
         if (_currentUser.HouseholdId is not { } householdId)
             return Error.Forbidden("Nisi član nijednog domaćinstva.", "Household.NotMember");
@@ -47,6 +54,11 @@ public sealed class AssignTaskCommandHandler
 
         task.AssignedToUserId = request.AssignedToUserId;
         await _db.SaveChangesAsync(cancellationToken);
+
+        // Tek posle commita — ako je (novom) korisniku dodeljeno, obavesti ga lično.
+        if (task.AssignedToUserId is { } notifyAssigneeId)
+            await _publisher.Publish(
+                new TaskAssignedEvent(householdId, actorId, notifyAssigneeId, task.Title), cancellationToken);
 
         return task.ToDto();
     }
