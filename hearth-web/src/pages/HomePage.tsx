@@ -16,9 +16,12 @@ export function HomePage() {
         )}
         .
       </p>
-      <p className="rounded-xl border border-hearth-200 bg-white p-4 text-sm text-stone-500">
-        Tasks, shopping, and notifications arrive in F3–F5.
-      </p>
+      {user?.householdId && (
+        <p className="rounded-xl border border-hearth-200 bg-white p-4 text-sm text-stone-600">
+          Household connected. Tasks, shopping, and notifications arrive in
+          F3–F5.
+        </p>
+      )}
     </div>
   )
 }
