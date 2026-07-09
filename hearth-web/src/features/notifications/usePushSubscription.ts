@@ -43,7 +43,19 @@ export function usePushSubscription() {
         return
       }
       const subscription = await registration.pushManager.getSubscription()
-      if (!cancelled) setStatus(subscription ? 'on' : 'off')
+      if (cancelled) return
+      setStatus(subscription ? 'on' : 'off')
+
+      // Samoizlečenje: browser pretplata postoji, ali backend možda nema red
+      // (npr. raniji upis nije prošao). Endpoint je idempotentan — ponovi prijavu.
+      if (subscription) {
+        const json = subscription.toJSON()
+        void subscribeToPush({
+          endpoint: subscription.endpoint,
+          p256dh: json.keys?.p256dh ?? '',
+          auth: json.keys?.auth ?? '',
+        }).catch(() => {})
+      }
     }
 
     void detect()
@@ -69,11 +81,18 @@ export function usePushSubscription() {
       })
 
       const json = subscription.toJSON()
-      await subscribeToPush({
-        endpoint: subscription.endpoint,
-        p256dh: json.keys?.p256dh ?? '',
-        auth: json.keys?.auth ?? '',
-      })
+      try {
+        await subscribeToPush({
+          endpoint: subscription.endpoint,
+          p256dh: json.keys?.p256dh ?? '',
+          auth: json.keys?.auth ?? '',
+        })
+      } catch (err) {
+        // Backend nije upisao pretplatu — poništi i browser stranu,
+        // da toggle ne laže "Uključeno".
+        await subscription.unsubscribe()
+        throw err
+      }
       setStatus('on')
     } catch {
       setStatus('off')

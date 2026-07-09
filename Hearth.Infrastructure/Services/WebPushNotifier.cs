@@ -32,13 +32,20 @@ public sealed class WebPushNotifier : IPushNotifier
         string message,
         CancellationToken cancellationToken = default)
     {
-        // Push je opciona nadogradnja — bez ključeva se tiho preskače.
+        // Push je opciona nadogradnja — bez ključeva se preskače.
         if (string.IsNullOrEmpty(_vapid.PublicKey) || string.IsNullOrEmpty(_vapid.PrivateKey))
+        {
+            _logger.LogInformation("Web push preskočen: VAPID ključevi nisu konfigurisani.");
             return;
+        }
 
         var subscriptions = await _db.PushSubscriptions
             .Where(s => userIds.Contains(s.UserId))
             .ToListAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Web push: {SubscriptionCount} pretplata za {RecipientCount} primalaca.",
+            subscriptions.Count, userIds.Count);
 
         if (subscriptions.Count == 0)
             return;
