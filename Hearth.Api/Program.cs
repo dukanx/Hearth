@@ -23,8 +23,8 @@ if (Environment.GetEnvironmentVariable("PORT") is { Length: > 0 } port)
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // Railway Postgres daje DATABASE_URL kao URI — konvertuj u Npgsql format
-// ako eksplicitan connection string nije postavljen.
-if (builder.Configuration.GetConnectionString("DefaultConnection") is null
+// ako eksplicitan connection string nije postavljen (appsettings ima prazan string!).
+if (string.IsNullOrEmpty(builder.Configuration.GetConnectionString("DefaultConnection"))
     && Environment.GetEnvironmentVariable("DATABASE_URL") is { Length: > 0 } databaseUrl)
 {
     var uri = new Uri(databaseUrl);
