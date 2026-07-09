@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -5,12 +6,16 @@ import {
   ClipboardCheck,
   ListChecks,
   ShoppingBasket,
+  UserRoundPlus,
   UsersRound,
 } from 'lucide-react'
 import { getTasks } from '../api/tasks'
+import { getMyHousehold } from '../api/households'
 import { getShoppingItems } from '../api/shopping'
 import { useAuth } from '../auth/AuthContext'
 import { useMembers } from '../features/household/useMembers'
+import { JoinCodeDisplay } from '../features/lobby/JoinCodeDisplay'
+import { Modal } from '../components/Modal'
 import { GlassCard } from '../components/ui/GlassCard'
 import { Badge } from '../components/ui/Badge'
 
@@ -30,11 +35,19 @@ const TODAY = new Intl.DateTimeFormat('sr-Latn-RS', {
 export function HomePage() {
   const { user } = useAuth()
   const { members, self } = useMembers()
+  const [inviteOpen, setInviteOpen] = useState(false)
 
   const tasksQuery = useQuery({
     queryKey: ['tasks', {}],
     queryFn: () => getTasks(),
   })
+
+  const householdQuery = useQuery({
+    queryKey: ['household'],
+    queryFn: getMyHousehold,
+    staleTime: 5 * 60 * 1000,
+  })
+  const household = householdQuery.data
 
   const shoppingQuery = useQuery({
     queryKey: ['shopping', 'Needed'],
@@ -50,7 +63,7 @@ export function HomePage() {
     <div className="space-y-6">
       <header className="animate-fade-up">
         <p className="text-sm font-medium text-ink-soft first-letter:uppercase">
-          {TODAY}
+          {household ? `${household.name} · ${TODAY}` : TODAY}
         </p>
         <h1 className="mt-1 text-[1.7rem] leading-tight font-bold tracking-tight text-ink">
           {greeting()}
@@ -74,11 +87,23 @@ export function HomePage() {
       </div>
 
       <GlassCard className="p-5 animate-fade-up [animation-delay:120ms]">
-        <div className="flex items-center gap-2 text-ink-soft">
-          <UsersRound size={16} aria-hidden />
-          <h2 className="text-[13px] font-bold tracking-wide uppercase">
-            Ukućani
-          </h2>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-ink-soft">
+            <UsersRound size={16} aria-hidden />
+            <h2 className="text-[13px] font-bold tracking-wide uppercase">
+              Ukućani
+            </h2>
+          </div>
+          {household?.adultJoinCode && (
+            <button
+              type="button"
+              onClick={() => setInviteOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-ember-50 px-3 py-1.5 text-xs font-semibold text-ember-700 transition hover:bg-ember-100 active:scale-95"
+            >
+              <UserRoundPlus size={13} aria-hidden />
+              Pozovi
+            </button>
+          )}
         </div>
         <ul className="mt-4 space-y-3">
           {members.map((member) => (
@@ -121,6 +146,22 @@ export function HomePage() {
           aria-hidden
         />
       </Link>
+
+      {inviteOpen && household?.adultJoinCode && household.childJoinCode && (
+        <Modal
+          title={`Pozovi u ${household.name}`}
+          onClose={() => setInviteOpen(false)}
+        >
+          <p className="mb-4 text-sm text-ink-soft">
+            Novi član se registruje, pa u lobiju unese jedan od ovih kodova —
+            kod određuje ulogu.
+          </p>
+          <div className="space-y-3">
+            <JoinCodeDisplay label="Kod za odrasle" code={household.adultJoinCode} />
+            <JoinCodeDisplay label="Kod za decu" code={household.childJoinCode} />
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 using Hearth.Api.Extensions;
 using Hearth.Application.Features.Households.CreateHousehold;
 using Hearth.Application.Features.Households.GetHouseholdMembers;
+using Hearth.Application.Features.Households.GetMyHousehold;
 using Hearth.Application.Features.Households.JoinHousehold;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -28,4 +29,8 @@ public sealed class HouseholdsController : ControllerBase
     [HttpGet("members")]
     public async Task<IActionResult> Members(CancellationToken ct)
         => (await _sender.Send(new GetHouseholdMembersQuery(), ct)).ToActionResult();
+
+    [HttpGet("mine")]
+    public async Task<IActionResult> Mine(CancellationToken ct)
+        => (await _sender.Send(new GetMyHouseholdQuery(), ct)).ToActionResult();
 }

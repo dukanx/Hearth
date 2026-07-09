@@ -3,6 +3,7 @@ import type {
   CreateHouseholdResponse,
   HouseholdMember,
   JoinHouseholdRequest,
+  MyHousehold,
 } from '../types/household'
 import type { AuthResponse } from '../types/auth'
 import { apiFetch } from './client'
@@ -23,4 +24,8 @@ export function joinHousehold(request: JoinHouseholdRequest) {
 
 export function getHouseholdMembers() {
   return apiFetch<HouseholdMember[]>('/api/households/members')
+}
+
+export function getMyHousehold() {
+  return apiFetch<MyHousehold>('/api/households/mine')
 }

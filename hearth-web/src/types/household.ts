@@ -25,3 +25,11 @@ export interface HouseholdMember {
   displayName: string
   role: 'Adult' | 'Child' | null
 }
+
+// Kodovi su null kad je trenutni korisnik dete.
+export interface MyHousehold {
+  id: string
+  name: string
+  adultJoinCode: string | null
+  childJoinCode: string | null
+}
