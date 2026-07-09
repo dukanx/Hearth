@@ -1,5 +1,8 @@
 # --- Frontend build ---
 FROM node:22-alpine AS web
+# npm 11 — ista major verzija kojom je generisan package-lock.json
+# (npm 10 iz base image-a strože validira lock i pada na wasm optional deps)
+RUN npm install -g npm@11
 WORKDIR /src
 COPY hearth-web/package.json hearth-web/package-lock.json ./
 RUN npm ci
