@@ -60,6 +60,10 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 builder.Services.AddScoped<IRealtimeNotifier, RealtimeNotifier>();
 
+// Presence: online korisnici (aktivan SignalR) ne dobijaju web push — već imaju toast.
+builder.Services.AddSingleton<ConnectionTracker>();
+builder.Services.AddSingleton<IRealtimePresence>(sp => sp.GetRequiredService<ConnectionTracker>());
+
 // JWT autentifikacija — JWT je default scheme (nema cookie da otme default).
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"]

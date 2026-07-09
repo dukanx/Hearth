@@ -1,4 +1,4 @@
-import { getStoredToken } from '../auth/auth-storage'
+import { clearStoredToken, getStoredToken } from '../auth/auth-storage'
 
 export interface ProblemDetails {
   title?: string
@@ -43,18 +43,29 @@ export async function apiFetch<T>(
     headers.set('Content-Type', 'application/json')
   }
 
+  let sentToken = false
   if (auth) {
     const token = getStoredToken()
     if (token) {
       headers.set('Authorization', `Bearer ${token}`)
+      sentToken = true
     }
   }
 
-  const response = await fetch(path, {
-    ...rest,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  })
+  let response: Response
+  try {
+    response = await fetch(path, {
+      ...rest,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    })
+  } catch {
+    throw new ApiError(
+      'Nema veze sa serverom. Proveri internet i pokušaj ponovo.',
+      0,
+      'Network',
+    )
+  }
 
   if (response.status === 204) {
     return undefined as T
@@ -65,6 +76,13 @@ export async function apiFetch<T>(
   const data = isJson ? await response.json() : null
 
   if (!response.ok) {
+    // Poslali smo token, a server kaže 401 -> sesija je istekla; nazad na prijavu.
+    // (Login sa pogrešnom lozinkom ne ulazi ovde — tada se token i ne šalje.)
+    if (response.status === 401 && sentToken) {
+      clearStoredToken()
+      window.location.assign('/login')
+    }
+
     const problem = data as ProblemDetails | null
     throw new ApiError(
       problem?.detail ?? problem?.title ?? response.statusText,

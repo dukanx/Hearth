@@ -15,15 +15,18 @@ public sealed class WebPushNotifier : IPushNotifier
 
     private readonly AppDbContext _db;
     private readonly VapidOptions _vapid;
+    private readonly IRealtimePresence _presence;
     private readonly ILogger<WebPushNotifier> _logger;
 
     public WebPushNotifier(
         AppDbContext db,
         IOptions<VapidOptions> vapid,
+        IRealtimePresence presence,
         ILogger<WebPushNotifier> logger)
     {
         _db = db;
         _vapid = vapid.Value;
+        _presence = presence;
         _logger = logger;
     }
 
@@ -39,13 +42,18 @@ public sealed class WebPushNotifier : IPushNotifier
             return;
         }
 
+        // Ko je trenutno u aplikaciji (aktivna SignalR konekcija), već je dobio toast —
+        // push ide samo offline korisnicima. Time nema ni dupliranja ni "tihih" push-eva
+        // (iOS ukida pretplatu ako service worker ne prikaže notifikaciju).
+        var offlineUserIds = userIds.Where(id => !_presence.IsOnline(id)).ToList();
+
         var subscriptions = await _db.PushSubscriptions
-            .Where(s => userIds.Contains(s.UserId))
+            .Where(s => offlineUserIds.Contains(s.UserId))
             .ToListAsync(cancellationToken);
 
         _logger.LogInformation(
-            "Web push: {SubscriptionCount} pretplata za {RecipientCount} primalaca.",
-            subscriptions.Count, userIds.Count);
+            "Web push: {SubscriptionCount} pretplata za {OfflineCount}/{RecipientCount} offline primalaca.",
+            subscriptions.Count, offlineUserIds.Count, userIds.Count);
 
         if (subscriptions.Count == 0)
             return;

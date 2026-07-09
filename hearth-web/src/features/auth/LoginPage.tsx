@@ -10,6 +10,7 @@ import { GlassCard } from '../../components/ui/GlassCard'
 import { Button } from '../../components/ui/Button'
 import { ErrorBanner } from '../../components/ui/ErrorBanner'
 import { Field, TextInput } from '../../components/ui/Field'
+import { PasswordInput } from '../../components/ui/PasswordInput'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -62,8 +63,7 @@ export function LoginPage() {
         </Field>
 
         <Field label="Lozinka" icon={<LockKeyhole />}>
-          <TextInput
-            type="password"
+          <PasswordInput
             required
             autoComplete="current-password"
             placeholder="••••••"

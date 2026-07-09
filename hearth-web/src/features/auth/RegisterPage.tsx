@@ -10,6 +10,7 @@ import { GlassCard } from '../../components/ui/GlassCard'
 import { Button } from '../../components/ui/Button'
 import { ErrorBanner } from '../../components/ui/ErrorBanner'
 import { Field, TextInput } from '../../components/ui/Field'
+import { PasswordInput } from '../../components/ui/PasswordInput'
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -17,6 +18,7 @@ export function RegisterPage() {
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
 
@@ -41,8 +43,15 @@ export function RegisterPage() {
     event.preventDefault()
     setError(null)
     setFieldErrors({})
+    if (password !== confirmPassword) {
+      setError('Lozinke se ne poklapaju.')
+      return
+    }
     mutation.mutate({ email, password, displayName })
   }
+
+  const passwordsMismatch =
+    confirmPassword.length > 0 && confirmPassword !== password
 
   function fieldError(name: string) {
     return fieldErrors[name]?.[0]
@@ -86,8 +95,7 @@ export function RegisterPage() {
           error={fieldError('Password')}
           hint="Najmanje 6 karaktera"
         >
-          <TextInput
-            type="password"
+          <PasswordInput
             required
             minLength={6}
             autoComplete="new-password"
@@ -97,7 +105,26 @@ export function RegisterPage() {
           />
         </Field>
 
-        <Button type="submit" loading={mutation.isPending} className="w-full">
+        <Field
+          label="Potvrdi lozinku"
+          icon={<LockKeyhole />}
+          error={passwordsMismatch ? 'Lozinke se ne poklapaju.' : undefined}
+        >
+          <PasswordInput
+            required
+            autoComplete="new-password"
+            placeholder="••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </Field>
+
+        <Button
+          type="submit"
+          loading={mutation.isPending}
+          disabled={passwordsMismatch}
+          className="w-full"
+        >
           Napravi nalog
         </Button>
       </form>
