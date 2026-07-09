@@ -95,6 +95,17 @@
     0 8px 32px -12px rgb(33 26 18 / 0.18);
 }
 
+/* Neprozirnija varijanta — za panele sa gušćim tekstom (npr. obaveštenja) */
+@utility glass-strong {
+  background: color-mix(in srgb, white 90%, transparent);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid color-mix(in srgb, white 85%, transparent);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, white 95%, transparent),
+    0 12px 40px -12px rgb(33 26 18 / 0.28);
+}
+
 /* Varijanta za trake (top/bottom bar) — jači blur, bez spoljne senke na vrhu */
 @utility glass-bar {
   background: color-mix(in srgb, white 55%, transparent);

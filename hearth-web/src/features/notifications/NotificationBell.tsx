@@ -80,7 +80,7 @@ export function NotificationBell() {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-40 cursor-default"
           />
-          <div className="glass absolute right-0 z-50 mt-2 flex max-h-104 w-80 max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-3xl animate-pop-in">
+          <div className="glass-strong absolute right-0 z-50 mt-2 flex max-h-104 w-80 max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-3xl animate-pop-in">
             <div className="flex items-center justify-between gap-3 border-b border-line/70 px-4 py-3">
               <h2 className="text-sm font-bold text-ink">Obaveštenja</h2>
               {unreadCount > 0 && (
