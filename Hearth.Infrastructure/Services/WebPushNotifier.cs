@@ -13,6 +13,11 @@ public sealed class WebPushNotifier : IPushNotifier
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web);
 
+    // Push servisi (naročito Apple) umeju da "vise" — bez tvrdog timeout-a
+    // jedan mrtav endpoint blokira slanje svima ostalima.
+    private static readonly HttpClient SharedHttpClient =
+        new() { Timeout = TimeSpan.FromSeconds(10) };
+
     private readonly AppDbContext _db;
     private readonly VapidOptions _vapid;
     private readonly IRealtimePresence _presence;
@@ -62,8 +67,9 @@ public sealed class WebPushNotifier : IPushNotifier
         var payload = JsonSerializer.Serialize(
             new { title = "Hearth", message }, JsonOptions);
 
-        using var client = new WebPushClient();
+        using var client = new WebPushClient(SharedHttpClient);
         var dead = new List<Domain.Entities.PushSubscription>();
+        var delivered = 0;
 
         foreach (var subscription in subscriptions)
         {
@@ -73,19 +79,40 @@ public sealed class WebPushNotifier : IPushNotifier
             try
             {
                 await client.SendNotificationAsync(target, payload, vapidDetails, cancellationToken);
+                delivered++;
             }
             catch (WebPushException ex) when (
                 ex.StatusCode is System.Net.HttpStatusCode.NotFound
                     or System.Net.HttpStatusCode.Gone)
             {
                 // Browser je poništio pretplatu — počisti je.
+                _logger.LogInformation(
+                    "Web push pretplata više ne važi ({StatusCode}), brišem je: {Endpoint}",
+                    (int)ex.StatusCode, subscription.Endpoint);
                 dead.Add(subscription);
+            }
+            catch (WebPushException ex)
+            {
+                // Status + telo odgovora otkrivaju uzrok (npr. Apple 403 BadJwtToken = loš VAPID subject).
+                _logger.LogWarning(
+                    "Web push odbijen ({StatusCode}) za {Endpoint}: {Reason}",
+                    (int)ex.StatusCode, subscription.Endpoint, ex.Message);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogWarning(
+                    "Web push timeout (>10s) za {Endpoint} — push servis ne odgovara.",
+                    subscription.Endpoint);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Web push nije isporučen ({Endpoint})", subscription.Endpoint);
             }
         }
+
+        _logger.LogInformation(
+            "Web push isporučen na {Delivered}/{Total} pretplata.",
+            delivered, subscriptions.Count);
 
         if (dead.Count > 0)
         {

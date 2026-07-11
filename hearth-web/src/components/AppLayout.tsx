@@ -21,8 +21,11 @@ export function AppLayout() {
     <div className="min-h-dvh">
       <div className="ambient" aria-hidden />
 
-      {/* Top bar — translucentna traka, iOS stil */}
-      <header className="glass-bar sticky top-0 z-40 border-b border-white/50">
+      {/* Top bar — translucentna traka, iOS stil; fixed da se ne mrda pri skrolu */}
+      <header
+        className="glass-bar fixed inset-x-0 top-0 z-40 border-b border-white/50"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
         <div className="mx-auto flex max-w-xl items-center justify-between px-5 py-3">
           <Link to="/" aria-label="Hearth — početna">
             <Wordmark />
@@ -46,7 +49,11 @@ export function AppLayout() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-xl px-5 pt-6 pb-32">
+      {/* pt kompenzuje fixed header (visina trake + razmak + iOS safe-area) */}
+      <main
+        className="mx-auto max-w-xl px-5 pb-32"
+        style={{ paddingTop: 'calc(5.3rem + env(safe-area-inset-top))' }}
+      >
         <Outlet />
       </main>
 

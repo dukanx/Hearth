@@ -47,7 +47,13 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddScoped<IIdentityService, IdentityService>();
-        services.AddScoped<IPushNotifier, WebPushNotifier>();
+
+        // Push: handleri preko IPushNotifier samo pune red (trenutno, ne blokira zahtev);
+        // PushSenderService ga prazni u pozadini i tek tamo zove WebPushNotifier.
+        services.AddSingleton<PushQueue>();
+        services.AddSingleton<IPushNotifier>(sp => sp.GetRequiredService<PushQueue>());
+        services.AddScoped<WebPushNotifier>();
+        services.AddHostedService<PushSenderService>();
         services.AddSingleton<ITokenService, TokenService>();
         services.AddSingleton<IJoinCodeGenerator, JoinCodeGenerator>();
 

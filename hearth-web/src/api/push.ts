@@ -15,6 +15,16 @@ export function subscribeToPush(subscription: {
   })
 }
 
+export interface PushSubscriptionInfo {
+  service: string
+  createdAt: string
+}
+
+// Dijagnostika: koje uređaje backend zna za trenutnog korisnika.
+export function getMyPushSubscriptions() {
+  return apiFetch<PushSubscriptionInfo[]>('/api/push/subscriptions')
+}
+
 export function unsubscribeFromPush(endpoint: string) {
   return apiFetch<void>('/api/push/unsubscribe', {
     method: 'POST',

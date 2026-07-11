@@ -6,6 +6,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from '../../api/notifications'
+import { getMyPushSubscriptions } from '../../api/push'
 import type { HearthNotification } from '../../types/notification'
 import { usePushSubscription } from './usePushSubscription'
 
@@ -21,6 +22,15 @@ function formatRelative(value: string) {
   return REL_TIME.format(Math.round(diffHours / 24), 'day')
 }
 
+// Host push servisa -> ime koje korisnik prepoznaje.
+function serviceName(host: string) {
+  if (host.includes('push.apple.com')) return 'iPhone/iPad (Apple)'
+  if (host.includes('fcm.googleapis.com')) return 'Chrome / Android (Google)'
+  if (host.includes('mozilla.com')) return 'Firefox'
+  if (host.includes('notify.windows.com')) return 'Edge / Windows'
+  return host
+}
+
 export function NotificationBell() {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
@@ -29,6 +39,14 @@ export function NotificationBell() {
   const query = useQuery({
     queryKey: ['notifications'],
     queryFn: () => getNotifications(),
+  })
+
+  // Dijagnostika push-a: koje uređaje backend zna. Učitava se tek kad je
+  // panel otvoren i push podržan — inače ne troši zahteve.
+  const devicesQuery = useQuery({
+    queryKey: ['push', 'subscriptions'],
+    queryFn: getMyPushSubscriptions,
+    enabled: open && push.status !== 'unsupported',
   })
 
   const invalidate = () =>
@@ -145,7 +163,8 @@ export function NotificationBell() {
 
             {/* Sistemske push notifikacije — vidljivo samo kad postoji service worker (production build) */}
             {push.status !== 'unsupported' && (
-              <div className="flex items-center justify-between gap-3 border-t border-line/70 px-4 py-3">
+              <div className="border-t border-line/70 px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
                 <span className="text-xs font-semibold text-ink-soft">
                   {push.status === 'denied'
                     ? 'Notifikacije su blokirane u browseru'
@@ -173,6 +192,19 @@ export function NotificationBell() {
                     )}
                     {push.status === 'on' ? 'Uključeno' : 'Uključi'}
                   </button>
+                )}
+                </div>
+
+                {/* Uređaji koje backend zna — ako je prazno a toggle kaže "Uključeno",
+                    pretplata nije stigla do baze. */}
+                {devicesQuery.data && (
+                  <p className="mt-2 text-[11px] leading-relaxed text-ink-faint">
+                    {devicesQuery.data.length === 0
+                      ? 'Nijedan uređaj nije prijavljen za push.'
+                      : `Prijavljeni uređaji: ${devicesQuery.data
+                          .map((d) => serviceName(d.service))
+                          .join(', ')}`}
+                  </p>
                 )}
               </div>
             )}

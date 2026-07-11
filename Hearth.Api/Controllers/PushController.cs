@@ -1,4 +1,5 @@
 using Hearth.Api.Extensions;
+using Hearth.Application.Features.Push.GetMyPushSubscriptions;
 using Hearth.Application.Features.Push.SubscribeToPush;
 using Hearth.Application.Features.Push.UnsubscribeFromPush;
 using Hearth.Infrastructure.Services;
@@ -29,6 +30,11 @@ public sealed class PushController : ControllerBase
         => string.IsNullOrEmpty(_vapid.PublicKey)
             ? NotFound()
             : Ok(new { publicKey = _vapid.PublicKey });
+
+    // Dijagnostika: koje push pretplate (uređaje) backend ima za trenutnog korisnika.
+    [HttpGet("subscriptions")]
+    public async Task<IActionResult> MySubscriptions(CancellationToken ct)
+        => (await _sender.Send(new GetMyPushSubscriptionsQuery(), ct)).ToActionResult();
 
     [HttpPost("subscribe")]
     public async Task<IActionResult> Subscribe(SubscribeToPushCommand command, CancellationToken ct)
